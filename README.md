@@ -1,6 +1,6 @@
-# Equipo 1: 🎷SoundScouts
+# Equipo 1: 🎷**SoundScouts**
 
- 𝄞 Sistema De Recomendación Para Streaming 𝄞
+ 𝄞 **Sistema De Recomendación Para Streaming** 𝄞
 
  Una plataforma de streaming necesita personalizar recomendaciones musicales basadas en:
 
@@ -12,7 +12,7 @@
 
 
 
-💠Estructuras de datos obligatorias:
+💠**Estructuras de datos obligatorias:**
 
 ➛Grafos (red social de usuarios)
 
@@ -28,7 +28,7 @@
 
 💠Paso a Paso:
 
-1. Backend (6 alumnos)
+**1. Backend (6 alumnos)**
 
 Sub  Grupo 1: Modelar grafo de usuarios-artistas con networkx
 
@@ -39,7 +39,7 @@ Sub  Grupo 3: Usar pilas para almacenar últimas 10 reproducciones
 Sub  Grupo 4: Gestionar cola de próximas canciones sugeridas
 
 
-2. Frontend (3 alumnos)
+**2. Frontend (3 alumnos)**
 
 ➛Interfaz con:
 
@@ -48,7 +48,7 @@ Menú de usuario (1. Ver recomendaciones, 2. Historial)
 Visualización básica del grafo de amigos
 
 
-3. Metodología Ágil (1 Scrum Master + 1 Product Owner)
+**3. Metodología Ágil (1 Scrum Master + 1 Product Owner)**
 
 ➛Herramientas:
 
@@ -67,7 +67,7 @@ Sprint 3: Interfaz integrada
 
 
 
-💠Integrantes y sus roles (Semana 1):
+💠**Integrantes y sus roles (Semana 1):**
 
 ▷Pérez Cafferata Sebastián Manuel: BackEnd
 
@@ -91,7 +91,7 @@ Sprint 3: Interfaz integrada
 
 
 
-💠Herramientas utilizadas:
+💠**Herramientas utilizadas:**
 
 ➛Discord
 
@@ -103,7 +103,7 @@ Sprint 3: Interfaz integrada
 
 
 
-💠Horarios de reunión:
+💠**Horarios de reunión:**
 
 🔹Lunes: 12.30h a 15.40h🔹
 
@@ -111,7 +111,7 @@ Sprint 3: Interfaz integrada
 
 
 
-💠Reglas internas del equipo:
+💠**Reglas internas del equipo:**
 
 ➛Horarios de trabajo delimitados
 
