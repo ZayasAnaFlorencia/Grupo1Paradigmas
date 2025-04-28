@@ -14,15 +14,15 @@
 
 💠**Estructuras de datos obligatorias:**
 
-➛Grafos (red social de usuarios)
+🔸Grafos (red social de usuarios)
 
-➛Árboles binarios (clasificación de géneros)
+🔸Árboles binarios (clasificación de géneros)
 
-➛Pilas (historial reciente)
+🔸Pilas (historial reciente)
 
-➛Colas (canciones en espera)
+🔸Colas (canciones en espera)
 
-➛Arreglos (top semanal)
+🔸Arreglos (top semanal)
 
 
 
@@ -41,7 +41,7 @@ Sub  Grupo 4: Gestionar cola de próximas canciones sugeridas
 
 **2. Frontend (3 alumnos)**
 
-➛Interfaz con:
+🔸Interfaz con:
 
 Menú de usuario (1. Ver recomendaciones, 2. Historial)
 
@@ -50,14 +50,14 @@ Visualización básica del grafo de amigos
 
 **3. Metodología Ágil (1 Scrum Master + 1 Product Owner)**
 
-➛Herramientas:
+🔸Herramientas:
 
 Jira para sprints de 4 días
 
 GitHub para control de versiones
 
 
-➛Entregables por sprint:
+🔸Entregables por sprint:
 
 Sprint 1: Grafo de relaciones funcional
 
@@ -66,40 +66,61 @@ Sprint 2: Algoritmo de recomendación básico
 Sprint 3: Interfaz integrada
 
 
+💠**Roles del equipo:**
 
-💠**Integrantes y sus roles (Semana 1):**
+**🔸Lider:** Leguizamón Vanina
 
-▷Pérez Cafferata Sebastián Manuel: BackEnd
+**🔸Documentador:** Bedoya Brenda
 
-▷Recalde Diego Hernan: BackEnd
+**🔸Tester:** Carabajal Valentina
 
-▷Machado Thomas Santino: FrontEnd
+**🔸Scrum Master:** Zayas Ana
 
-▷Rendicz Juan Pablo Ezequiel: BackEnd
+**🔸Developers:** Machado Santino, Cafferata Sebastián, Recalde Diego, Rendicz Juan Pablo, Aguilera Nicolas y Agazzoni Fátima.
 
-▷Carabajal Valentina: BackEnd
 
-▷Leguizamon Vanina: Metodologías Agiles
 
-▷Agazzoni Fátima: FrontEnd
+💠**Roles (Semana 1):**
 
-▷Zayas Ana: BackEnd
+**🔸BackEnd:**
 
-▷Bedoya Brenda: BackEnd
+▷Pérez Cafferata Sebastián Manuel
 
-▷Aguilera Nicolas: FrontEnd
+▷Recalde Diego Hernan
+
+▷Rendicz Juan Pablo Ezequiel
+
+▷Carabajal Valentina
+
+▷Zayas Ana
+
+▷Bedoya Brenda
+
+**🔸FrontEnd:**
+
+▷Machado Thomas Santino
+
+▷Agazzoni Fátima
+
+▷Aguilera Nicolas
+
+**🔸Metodologías ágiles:**
+
+▷Leguizamon Vanina
+
+
 
 
 
 💠**Herramientas utilizadas:**
 
-➛Discord
+🔸Discord
 
-➛Miro
+🔸Miro
 
-➛GitHub
+🔸GitHub
 
-➛Canva
+🔸Canva
 
 
 
@@ -113,13 +134,13 @@ Sprint 3: Interfaz integrada
 
 💠**Reglas internas del equipo:**
 
-➛Horarios de trabajo delimitados
+🔸Horarios de trabajo delimitados
 
-➛Grupos de trabajo rotativos por semana
+🔸Grupos de trabajo rotativos por semana
 
-➛Uso de las metodologías ágiles: (Miro, GitHub y Discord)
+🔸Uso de las metodologías ágiles: (Miro, GitHub y Discord)
 
-➛Daily Stand-Up obligatoria
+🔸Daily Stand-Up obligatoria
 
-➛Reuniones remotas previo a las entregas (15min máx.)
+🔸Reuniones remotas previo a las entregas (15min máx.)
 
