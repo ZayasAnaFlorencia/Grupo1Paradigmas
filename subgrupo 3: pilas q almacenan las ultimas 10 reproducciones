@@ -1,0 +1,91 @@
+<?php
+class PilaReproducciones {
+    private $pila;
+    private $max_size;
+    private $dbHandler;
+    private $usuarioId;
+
+    /**
+     * Constructor de la pila de reproducciones
+     * @param object $dbHandler - Tu manejador de base de datos personalizado
+     * @param int $usuarioId - ID del usuario
+     * @param int $max_size - Tamaño máximo de la pila (default 10)
+     */
+    public function __construct($dbHandler, $usuarioId, $max_size = 10) {
+        $this->dbHandler = $dbHandler;
+        $this->usuarioId = $usuarioId;
+        $this->max_size = $max_size;
+        $this->pila = $this->cargarDesdeBD();
+    }
+
+    /**
+     * Agrega una reproducción a la pila
+     * @param int $cancionId - ID de la canción reproducida
+     * @return bool - True si se agregó correctamente
+     */
+    public function agregarReproduccion($cancionId) {
+        // Verificar si la canción ya está en la pila
+        foreach ($this->pila as $key => $item) {
+            if ($item['cancion_id'] == $cancionId) {
+                unset($this->pila[$key]);
+            }
+        }
+
+        // Agregar la nueva reproducción al inicio
+        array_unshift($this->pila, [
+            'cancion_id' => $cancionId,
+            'timestamp' => time()
+        ]);
+
+        // Mantener solo las últimas 10 reproducciones
+        $this->pila = array_slice($this->pila, 0, $this->max_size);
+
+        // Persistir en la base de datos
+        return $this->guardarEnBD();
+    }
+
+    /**
+     * Obtiene las últimas reproducciones
+     * @return array - Array de IDs de canciones (del más reciente al más antiguo)
+     */
+    public function obtenerRecientes() {
+        return array_column($this->pila, 'cancion_id');
+    }
+
+    /**
+     * Obtiene los datos completos de las reproducciones
+     * @return array - Array con toda la información
+     */
+    public function obtenerDatosCompletos() {
+        return $this->pila;
+    }
+
+    // ==================== MÉTODOS PRIVADOS ====================
+
+    /**
+     * Carga el historial desde la base de datos
+     * @return array - Datos de reproducciones
+     */
+    private function cargarDesdeBD() {
+        try {
+            return $this->dbHandler->obtenerHistorialUsuario($this->usuarioId, $this->max_size);
+        } catch (Exception $e) {
+            // Loggear error y devolver array vacío
+            error_log("Error cargando historial: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Guarda el estado actual en la base de datos
+     * @return bool - True si se guardó correctamente
+     */
+    private function guardarEnBD() {
+        try {
+            return $this->dbHandler->actualizarHistorialUsuario($this->usuarioId, $this->pila);
+        } catch (Exception $e) {
+            error_log("Error guardando historial: " . $e->getMessage());
+            return false;
+        }
+    }
+}
