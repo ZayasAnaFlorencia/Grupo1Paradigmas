@@ -1,0 +1,159 @@
+<?php
+class GestorGenerosMusicales {
+    private $conexion;
+    
+    public function __construct($conexion) {
+        $this->conexion = $conexion;
+    }
+    
+    /**
+     * Obtiene el árbol completo de géneros musicales
+     */
+    public function obtenerArbolGeneros() {
+        $query = "SELECT nombre, padre, nivel FROM generos_musicales ORDER BY nivel, nombre";
+        $stmt = $this->conexion->prepare($query);
+        $stmt->execute();
+        
+        $generos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Construir el árbol
+        $arbol = [];
+        foreach ($generos as $genero) {
+            if ($genero['padre'] === null) {
+                $arbol[$genero['nombre']] = $this->construirSubarbol($genero, $generos);
+            }
+        }
+        
+        return $arbol;
+    }
+    
+    private function construirSubarbol($nodo, $generos) {
+        $subarbol = [
+            'nombre' => $nodo['nombre'],
+            'nivel' => $nodo['nivel'],
+            'hijos' => []
+        ];
+        
+        foreach ($generos as $genero) {
+            if ($genero['padre'] == $nodo['nombre']) {
+                $subarbol['hijos'][] = $this->construirSubarbol($genero, $generos);
+            }
+        }
+        
+        return $subarbol;
+    }
+    
+    /**
+     * Obtiene los géneros favoritos de un usuario basado en su historial
+     */
+    public function obtenerGenerosFavoritos($usuarioId) {
+        $query = "SELECT c.genero, COUNT(*) as reproducciones
+                  FROM historial_reproduccion hr
+                  JOIN canciones c ON hr.cancion_id = c.id
+                  WHERE hr.usuario_id = :usuario_id
+                  GROUP BY c.genero
+                  ORDER BY reproducciones DESC
+                  LIMIT 5";
+        
+        $stmt = $this->conexion->prepare($query);
+        $stmt->bindParam(':usuario_id', $usuarioId, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Recomienda canciones basadas en los géneros favoritos
+     */
+    public function recomendarCanciones($usuarioId, $limite = 10) {
+        $query = "SELECT c.id, c.titulo, a.nombre as artista, c.genero, c.duracion
+                  FROM canciones c
+                  JOIN artistas a ON c.artista_id = a.id
+                  WHERE c.genero IN (
+                      SELECT c2.genero
+                      FROM historial_reproduccion hr
+                      JOIN canciones c2 ON hr.cancion_id = c2.id
+                      WHERE hr.usuario_id = :usuario_id
+                      GROUP BY c2.genero
+                      ORDER BY COUNT(*) DESC
+                      LIMIT 3
+                  )
+                  AND c.id NOT IN (
+                      SELECT cancion_id 
+                      FROM historial_reproduccion 
+                      WHERE usuario_id = :usuario_id2
+                  )
+                  ORDER BY c.reproducciones DESC
+                  LIMIT :limite";
+        
+        $stmt = $this->conexion->prepare($query);
+        $stmt->bindParam(':usuario_id', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':usuario_id2', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Recomienda canciones basadas en géneros similares
+     */
+    public function recomendarPorGenerosSimilares($genero, $limite = 5) {
+        // Primero obtenemos el género padre si existe
+        $queryPadre = "SELECT padre FROM generos_musicales WHERE nombre = :genero";
+        $stmtPadre = $this->conexion->prepare($queryPadre);
+        $stmtPadre->bindParam(':genero', $genero, PDO::PARAM_STR);
+        $stmtPadre->execute();
+        $padre = $stmtPadre->fetch(PDO::FETCH_ASSOC);
+        
+        $generoBusqueda = $padre ? $padre['padre'] : $genero;
+        
+        $query = "SELECT c.id, c.titulo, a.nombre as artista, c.genero
+                  FROM canciones c
+                  JOIN artistas a ON c.artista_id = a.id
+                  WHERE c.genero IN (
+                      SELECT nombre 
+                      FROM generos_musicales 
+                      WHERE padre = :genero_padre OR nombre = :genero_padre
+                  )
+                  AND c.genero != :genero_excluir
+                  ORDER BY c.reproducciones DESC
+                  LIMIT :limite";
+        
+        $stmt = $this->conexion->prepare($query);
+        $stmt->bindParam(':genero_padre', $generoBusqueda, PDO::PARAM_STR);
+        $stmt->bindParam(':genero_excluir', $genero, PDO::PARAM_STR);
+        $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Obtiene artistas relacionados con los géneros favoritos del usuario
+     */
+    public function recomendarArtistas($usuarioId, $limite = 5) {
+        $query = "SELECT ar.id, ar.nombre, ar.genero_principal, COUNT(*) as canciones_escuchadas
+                  FROM artistas ar
+                  JOIN canciones c ON ar.id = c.artista_id
+                  JOIN historial_reproduccion hr ON c.id = hr.cancion_id
+                  WHERE hr.usuario_id = :usuario_id
+                  AND ar.id NOT IN (
+                      SELECT artista_id 
+                      FROM seguimiento_artistas 
+                      WHERE usuario_id = :usuario_id2
+                  )
+                  GROUP BY ar.id
+                  ORDER BY canciones_escuchadas DESC
+                  LIMIT :limite";
+        
+        $stmt = $this->conexion->prepare($query);
+        $stmt->bindParam(':usuario_id', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':usuario_id2', $usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+?>
