@@ -45,26 +45,3 @@ class PilaReproducciones {
         return count($this->pila);
     }
 }
-
-// Ejemplo de uso:
-$pilaRepro = new PilaReproducciones(10);
-
-// Agregar algunas reproducciones
-$pilaRepro->agregarReproduccion("Canción 1 - Artista A");
-$pilaRepro->agregarReproduccion("Canción 2 - Artista B");
-$pilaRepro->agregarReproduccion("Canción 3 - Artista C");
-// ... agregar más hasta 10
-
-// Obtener las últimas 10 reproducciones (las más recientes primero)
-$ultimasRepro = $pilaRepro->obtenerReproducciones();
-echo "Últimas reproducciones:<br>";
-foreach ($ultimasRepro as $index => $cancion) {
-    echo ($index + 1) . ". " . $cancion . "<br>";
-}
-
-// Obtener la última reproducción sin sacarla de la pila
-echo "Última reproducción: " . $pilaRepro->ultimaReproduccion() . "<br>";
-
-// Sacar una reproducción (la última)
-echo "Sacando: " . $pilaRepro->sacarReproduccion() . "<br>";
-?>
