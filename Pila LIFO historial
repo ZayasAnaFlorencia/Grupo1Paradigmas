@@ -1,32 +1,70 @@
-CREATE TABLE IF NOT EXISTS pila_reproduccion (
-  usuario_id INT NOT NULL,
-  cancion_id INT NOT NULL,
-  fecha_reproduccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  orden INT NOT NULL DEFAULT 0,
-  PRIMARY KEY (usuario_id, orden),
-  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-  FOREIGN KEY (cancion_id) REFERENCES canciones(id)
-);
+<?php
+class PilaReproducciones {
+    private $pila;
+    private $limite;
 
--- Procedimiento para agregar canción (PUSH)
-CREATE OR REPLACE PROCEDURE agregar_cancion_pila(
-  p_usuario_id INT,
-  p_cancion_id INT
-)
-AS
-BEGIN
-  -- Actualizar órdenes existentes
-  UPDATE pila_reproduccion 
-  SET orden = orden + 1 
-  WHERE usuario_id = p_usuario_id AND orden < 10;
-  
-  -- Eliminar canciones más allá del límite 10
-  DELETE FROM pila_reproduccion 
-  WHERE usuario_id = p_usuario_id AND orden >= 10;
-  
-  -- Insertar nueva canción en la posición 0
-  INSERT INTO pila_reproduccion (usuario_id, cancion_id, orden)
-  VALUES (p_usuario_id, p_cancion_id, 0);
-  
-  COMMIT;
-END;
+    public function __construct($limite = 10) {
+        $this->pila = array();
+        $this->limite = $limite;
+    }
+
+    // Agrega una nueva reproducción a la pila
+    public function agregarReproduccion($cancion) {
+        // Si la pila alcanzó el límite, quita el elemento más antiguo
+        if (count($this->pila) >= $this->limite) {
+            array_shift($this->pila);
+        }
+        array_push($this->pila, $cancion);
+    }
+
+    // Obtiene la última reproducción (sin eliminarla)
+    public function ultimaReproduccion() {
+        if (empty($this->pila)) {
+            return null;
+        }
+        return end($this->pila);
+    }
+
+    // Obtiene todas las reproducciones (las más recientes primero)
+    public function obtenerReproducciones() {
+        return array_reverse($this->pila);
+    }
+
+    // Elimina y devuelve la última reproducción
+    public function sacarReproduccion() {
+        return array_pop($this->pila);
+    }
+
+    // Vacía la pila de reproducciones
+    public function vaciarPila() {
+        $this->pila = array();
+    }
+
+    // Cuenta cuántas reproducciones hay en la pila
+    public function contarReproducciones() {
+        return count($this->pila);
+    }
+}
+
+// Ejemplo de uso:
+$pilaRepro = new PilaReproducciones(10);
+
+// Agregar algunas reproducciones
+$pilaRepro->agregarReproduccion("Canción 1 - Artista A");
+$pilaRepro->agregarReproduccion("Canción 2 - Artista B");
+$pilaRepro->agregarReproduccion("Canción 3 - Artista C");
+// ... agregar más hasta 10
+
+// Obtener las últimas 10 reproducciones (las más recientes primero)
+$ultimasRepro = $pilaRepro->obtenerReproducciones();
+echo "Últimas reproducciones:<br>";
+foreach ($ultimasRepro as $index => $cancion) {
+    echo ($index + 1) . ". " . $cancion . "<br>";
+}
+
+// Obtener la última reproducción sin sacarla de la pila
+echo "Última reproducción: " . $pilaRepro->ultimaReproduccion() . "<br>";
+
+// Sacar una reproducción (la última)
+echo "Sacando: " . $pilaRepro->sacarReproduccion() . "<br>";
+?>
