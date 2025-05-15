@@ -1,0 +1,32 @@
+CREATE TABLE IF NOT EXISTS pila_reproduccion (
+  usuario_id INT NOT NULL,
+  cancion_id INT NOT NULL,
+  fecha_reproduccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  orden INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (usuario_id, orden),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  FOREIGN KEY (cancion_id) REFERENCES canciones(id)
+);
+
+-- Procedimiento para agregar canción (PUSH)
+CREATE OR REPLACE PROCEDURE agregar_cancion_pila(
+  p_usuario_id INT,
+  p_cancion_id INT
+)
+AS
+BEGIN
+  -- Actualizar órdenes existentes
+  UPDATE pila_reproduccion 
+  SET orden = orden + 1 
+  WHERE usuario_id = p_usuario_id AND orden < 10;
+  
+  -- Eliminar canciones más allá del límite 10
+  DELETE FROM pila_reproduccion 
+  WHERE usuario_id = p_usuario_id AND orden >= 10;
+  
+  -- Insertar nueva canción en la posición 0
+  INSERT INTO pila_reproduccion (usuario_id, cancion_id, orden)
+  VALUES (p_usuario_id, p_cancion_id, 0);
+  
+  COMMIT;
+END;
