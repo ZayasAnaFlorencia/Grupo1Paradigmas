@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="estilologin.css">
+    <title>Términos y Condiciones - SOUNDSCOUTS</title>
+    <style>
+        .terms-wrapper {
+            position: relative;
+            width: 800px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            backdrop-filter: blur(8.5px);
+            -webkit-backdrop-filter: blur(8.5px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 10;
+            margin: 120px auto;
+            padding: 40px;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .terms-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0,150,255,0.1) 0%, transparent 70%);
+            animation: waterEffect 8s linear infinite;
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        @keyframes waterEffect {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .terms-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            box-shadow: 
+                60px 80px 0 rgba(255,255,255,0.1),
+                -40px 120px 0 rgba(255,255,255,0.1),
+                80px -30px 0 rgba(255,255,255,0.1);
+            z-index: -1;
+        }
+
+        .terms-container {
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 20px;
+        }
+
+        .terms-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terms-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .terms-container::-webkit-scrollbar-thumb {
+            background: rgba(29, 161, 242, 0.5);
+            border-radius: 10px;
+        }
+
+        .terms-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(29, 161, 242, 0.8);
+        }
+
+        .terms-container h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #1DA1F2;
+            text-shadow: 0 2px 8px rgba(0, 150, 255, 0.4);
+            position: relative;
+        }
+
+        .terms-container h1::after {
+            content: "Términos y Condiciones";
+            position: absolute;
+            left: 0;
+            bottom: -15px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.3);
+            transform: scaleY(-1) translateY(5px);
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1));
+            -webkit-background-clip: text;
+            background-clip: text;
+            filter: blur(1px);
+        }
+
+        .terms-container h2 {
+            font-size: 1.8em;
+            margin: 30px 0 20px;
+            color: #1DA1F2;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .terms-container h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #1DA1F2;
+            border-radius: 50%;
+        }
+
+        .terms-container p, 
+        .terms-container ul {
+            margin-bottom: 15px;
+        }
+
+        .terms-container ul {
+            padding-left: 25px;
+            list-style-type: none;
+        }
+
+        .terms-container ul li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 10px;
+        }
+
+        .terms-container ul li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #1DA1F2;
+            font-size: 1.5em;
+            line-height: 0.8;
+        }
+
+        .highlight {
+            background-color: rgba(29, 161, 242, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            border-left: 3px solid #1DA1F2;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .terms-container a {
+            color: #1DA1F2;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .terms-container a:hover {
+            text-decoration: underline;
+            color: #1a8cd8;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 30px;
+            background: #1DA1F2;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-btn:hover {
+            background: #1a8cd8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .back-btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transform: translateX(-100%);
+            transition: 0.6s;
+        }
+
+        .back-btn:hover::after {
+            transform: translateX(100%);
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(29, 161, 242, 0.1);
+            border-radius: 12px;
+            text-align: center;
+            font-style: italic;
+            position: relative;
+            overflow: hidden;
+            border: 1px dashed rgba(29, 161, 242, 0.3);
+        }
+
+        .footer-note::before {
+            content: "🎨";
+            margin-right: 8px;
+        }
+
+        .footer-note::after {
+            content: "🎵";
+            margin-left: 8px;
+        }
+
+        .update-date {
+            text-align: center;
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .terms-wrapper {
+                width: 90%;
+                margin: 100px auto;
+                padding: 30px;
+            }
+            
+            .terms-container h1 {
+                font-size: 2em;
+            }
+            
+            .terms-container h2 {
+                font-size: 1.5em;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .terms-wrapper {
+                padding: 20px;
+            }
+            
+            .terms-container h1 {
+                font-size: 1.8em;
+            }
+            
+            .terms-container h2 {
+                font-size: 1.3em;
+            }
+            
+            .back-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+            /* Floating animation for the wrapper */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .wrapper {
+            animation: float 6s ease-in-out infinite;
+        }
+    
+    </style>
+</head>
+<body>
+    <header>
+        <h2 class="logo">SOUNDSCOUTS</h2>
+        <nav class="navigation">
+            <a href="#">Premium</a>
+            <a href="#">Ajustes</a>
+            <a href="#">Descargar</a>
+            <span class="divider">|</span>
+            <a href="register.html">Registrarse</a>
+            <button class="btnLogin-popup">Iniciar Sesión</button>
+        </nav>
+    </header>
+
+    <div class="terms-wrapper">
+        <div class="terms-container">
+            <h1>Términos y Condiciones de Uso</h1>
+            
+            <p class="update-date">Última actualización: <span id="current-date"></span></p>
+            
+            <h2>1. Aceptación de los Términos</h2>
+            <p>Al utilizar SOUNDSCOUTS ("la Plataforma"), aceptas cumplir con estos Términos y Condiciones ("Términos"). Si no estás de acuerdo, por favor no uses nuestro servicio.</p>
+            
+            <h2>2. Uso por Menores de Edad</h2>
+            <p class="highlight">Si eres menor de 16 años, necesitas el permiso de tus padres o tutor legal para utilizar SOUNDSCOUTS.</p>
+            <p>Los usuarios entre 13 y 16 años deben:</p>
+            <ul>
+                <li>Obtener consentimiento verificable de sus padres/tutores</li>
+                <li>Usar la plataforma bajo supervisión adulta</li>
+                <li>No proporcionar información personal sin autorización</li>
+            </ul>
+            <p>Prohibimos categóricamente el uso de nuestra plataforma por menores de 13 años.</p>
+            
+            <h2>3. Privacidad y Protección de Datos</h2>
+            <p>Recopilamos y utilizamos tu información personal según lo establecido en nuestra <a href="#" style="color: #1DA1F2;">Política de Privacidad</a>. Esto incluye:</p>
+            <ul>
+                <li>Datos de registro (email, nombre de usuario)</li>
+                <li>Preferencias musicales</li>
+                <li>Datos de uso de la plataforma</li>
+            </ul>
+            <p>Nos comprometemos a proteger tu información y nunca venderemos tus datos a terceros sin tu consentimiento explícito.</p>
+            
+            <h2>4. Conducta del Usuario</h2>
+            <p>Prohibimos:</p>
+            <ul>
+                <li>Contenido ofensivo, discriminatorio o ilegal</li>
+                <li>Spam o publicidad no autorizada</li>
+                <li>Suplantación de identidad</li>
+                <li>Cualquier actividad que dañe la experiencia de otros usuarios</li>
+            </ul>
+            
+            <h2>5. Propiedad Intelectual</h2>
+            <p>Todo el contenido de SOUNDSCOUTS (diseño, logotipos, interfaz) está protegido por derechos de autor. <span class="highlight">¿Viste qué bonita quedó la interfaz? 😉 Eso es puro arte digital.</span></p>
+            <p>La música disponible pertenece a sus respectivos dueños. Solo facilitamos el descubrimiento.</p>
+            
+            <h2>6. Limitación de Responsabilidad</h2>
+            <p>SOUNDSCOUTS no se hace responsable por:</p>
+            <ul>
+                <li>Interrupciones temporales del servicio</li>
+                <li>Contenido generado por usuarios</li>
+                <li>Daños derivados del uso inadecuado de la plataforma</li>
+            </ul>
+            
+            <h2>7. Modificaciones</h2>
+            <p>Podemos actualizar estos Términos ocasionalmente. Te notificaremos sobre cambios importantes.</p>
+            
+            <h2>8. Contacto</h2>
+            <p>Para preguntas sobre estos Términos: <a href="mailto:terminos@soundscouts.com" style="color: #1DA1F2;">terminos@soundscouts.com</a></p>
+            
+            <div class="footer-note">
+                <p>Gracias por elegir SOUNDSCOUTS. ¡Disfruta descubrir nueva música con nuestra hermosa interfaz que tanto nos costó diseñar!</p>
+            </div>
+            
+            <button onclick="window.location.href='register.html'" class="back-btn">
+                <i class="fas fa-arrow-left" style="margin-right: 8px;"></i>Volver al Registro
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', {
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric'
+        });
+
+        document.querySelector('.btnLogin-popup').addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+
+        document.querySelectorAll('.terms-container a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        const highlights = document.querySelectorAll('.highlight');
+        highlights.forEach(highlight => {
+            highlight.addEventListener('mouseenter', () => {
+                highlight.style.transform = 'translateY(-2px)';
+                highlight.style.boxShadow = '0 4px 8px rgba(29, 161, 242, 0.3)';
+            });
+            highlight.addEventListener('mouseleave', () => {
+                highlight.style.transform = '';
+                highlight.style.boxShadow = '';
+            });
+        });
+    </script>
+</body>
+</html>

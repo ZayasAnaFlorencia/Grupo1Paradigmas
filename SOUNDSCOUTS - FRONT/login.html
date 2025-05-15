@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SOUNDSCOUTS</title>
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 100px;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(8.5px);
+    -webkit-backdrop-filter: blur(8.5px);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 99;
+}
+
+.logo {
+    font-size: 2em;
+    color: #fff;
+    user-select: none;
+
+}
+
+.navigation a {
+    position: relative;
+    font-size: 1.1em;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 30px;
+    padding-bottom: 5px; /* Add some space for the underline */
+}
+
+.navigation a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px; /* Make it a bit thinner than your current 3px */
+    background: #fff;
+    border-radius: 5px;
+    transition: width 0.3s ease; /* Smooth transition for the width */
+}
+
+.navigation a:hover::after {
+    width: 100%; /* Full width on hover */
+}
+
+/* Remove the transform: scaleX(0) from your existing a::after */
+
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('https://pbs.twimg.com/media/F4FZIZebkAULKbo.jpg:large') no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.topbar .navbar {
+  display: flex;
+  align-items: center;
+}
+.topbar .navbar ul {
+  list-style: none;
+}
+.topbar .navbar ul li {
+  display: inline-block;
+  margin: 0px 8px;
+  width: 70px;
+}
+.topbar .navbar ul li a {
+  color: #b3b3b3;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+.topbar .navbar ul li a:hover,
+.topbar .navbar ul li a:active,
+.topbar .navbar ul li a:focus {
+  color: #ffffff;
+  font-size: 15px;
+}
+.topbar .navbar ul li.divider {
+  color: #ffffff;
+  font-size: 26px;
+  margin: 0px 20px;
+  width: auto;
+}
+.topbar .navbar button {
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 30px;
+  border: 0px;
+  border-radius: 40px;
+  cursor: pointer;
+  margin-left: 20px;
+}
+.topbar .navbar button:hover,
+.topbar .navbar button:active,
+.topbar .navbar button:focus {
+  background-color: #f2f2f2;
+}
+.navigation .divider {
+  color: #ffffff;
+  font-size: 26px;
+  margin: 0px 20px;
+  display: inline-block;
+  margin-left: 30px;
+}
+
+.btnLogin-popup {
+    position: relative;
+    padding: 15px 25px;
+    font-size: 15px;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: white; /* Changed from #444 to white */
+    background: #1DA1F2; /* Twitter-like blue */
+    box-shadow: 
+        inset 0 10px 5px rgba(0,0,0,0.1),
+        0 5px 15px rgba(0,0,0,0.1),
+        inset 0 -10px 15px rgba(255,255,255,0.2);
+    border-radius: 50px;
+    border: none;
+    margin-left: 30px;
+    transition: all 0.3s ease;
+    overflow: hidden; /* Ensures the glow doesn't leak outside */
+}
+
+
+/* Glow effect on hover */
+.btnLogin-popup:hover {
+    background: #1a8cd8; /* Slightly darker blue */
+    color: white;
+    box-shadow: 
+        0 0 10px rgba(29, 161, 242, 0.6),
+        0 0 20px rgba(29, 161, 242, 0.4),
+        0 0 30px rgba(29, 161, 242, 0.2);
+}
+
+/* Optional: Pulse animation for more emphasis */
+@keyframes pulse-glow {
+    0% { box-shadow: 0 0 10px rgba(29, 161, 242, 0.6); }
+    50% { box-shadow: 0 0 20px rgba(29, 161, 242, 0.8); }
+    100% { box-shadow: 0 0 10px rgba(29, 161, 242, 0.6); }
+}
+
+.btnLogin-popup:hover {
+    animation: pulse-glow 1.5s infinite;
+}
+
+/* Make the top line disappear on hover */
+.btnLogin-popup:hover::before {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+}
+
+.wrapper {
+    position: relative;
+    width: 400px;
+    height: 440px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    backdrop-filter: blur(8.5px);
+    -webkit-backdrop-filter: blur(8.5px);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    z-index: 10;
+}
+
+/* Add this new CSS below your existing .wrapper styles */
+
+.form-box {
+    width: 100%;
+    padding: 40px;
+}
+
+.form-box h2 {
+    font-size: 2em;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 30px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.input-box {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    margin: 30px 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.input-box label {
+    position: absolute;
+    top: 50%;
+    left: 40px;
+    transform: translateY(-50%);
+    color: #fff;
+    font-weight: 500;
+    pointer-events: none;
+    transition: .3s;
+}
+
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 1em;
+    color: #fff;
+    font-weight: 500;
+    padding-left: 40px;
+}
+
+.input-box .icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fff;
+    font-size: 1.2em;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-box input:focus~label,
+.input-box input:valid~label {
+    top: -5px;
+}
+
+/* Remember me checkbox */
+.remember-forgot {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+}
+
+.remember-me input {
+    accent-color: #1DA1F2;
+    width: 16px;
+    height: 16px;
+}
+
+.forgot-password {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+    color: #1DA1F2;
+}
+
+/* Login button */
+.btn {
+    width: 100%;
+    height: 45px;
+    background: #1DA1F2;
+    border: none;
+    outline: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1em;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    background: #1a8cd8;
+    box-shadow: 
+        0 0 10px rgba(29, 161, 242, 0.6),
+        0 0 20px rgba(29, 161, 242, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Register link */
+.login-register {
+    text-align: center;
+    margin-top: 25px;
+    color: #fff;
+}
+
+.register-link {
+    color: #1DA1F2;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.register-link:hover {
+    text-decoration: underline;
+}
+
+/* Update the icon styles to use your images */
+.input-box .icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px; /* Adjust based on your image size */
+    height: 24px; /* Adjust based on your image size */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Specific icons for each field */
+.input-box.email .icon {
+    background-image: url('your-email-icon.png'); /* Replace with your image path */
+}
+
+.input-box.password .icon {
+    background-image: url('your-password-icon.png'); /* Replace with your image path */
+}
+
+/* Update wrapper positioning for perfect centering */
+.wrapper {
+    position: relative;
+    width: 400px;
+    height: 500px; /* Slightly taller for better spacing */
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 25px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 40px rgba(31, 38, 135, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    z-index: 10;
+    margin-top: 20px; /* Adjust as needed */
+}
+
+/* Water-textured icons */
+.input-box .icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: drop-shadow(0 0 2px rgba(0, 150, 255, 0.5));
+    opacity: 0.9;
+}
+
+.input-box.email .icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4.7l-8 5.3-8-5.3V6l8 5.3 8-5.3v2.7z"/></svg>');
+}
+
+.input-box.password .icon {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>');
+}
+
+/* Creative title with water reflection effect */
+.form-box h2 {
+    font-size: 2.2em;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 40px;
+    text-shadow: 0 2px 8px rgba(0, 150, 255, 0.4);
+    position: relative;
+    letter-spacing: 1px;
+}
+
+.form-box h2::after {
+    content: "Inicio Sesión";
+    position: absolute;
+    left: 0;
+    bottom: -15px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.3);
+    transform: scaleY(-1) translateY(5px);
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: blur(1px);
+}
+
+/* Improved symmetrical spacing */
+.form-box {
+    width: 100%;
+    padding: 50px 40px;
+}
+
+.input-box {
+    margin: 25px 0;
+}
+
+.remember-me {
+    margin: 10px 0 20px;
+}
+
+.btn {
+    margin: 15px 0;
+}
+
+.login-register {
+    margin-top: 30px;
+}
+
+/* Enhanced water-like effects */
+.wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0,150,255,0.1) 0%, transparent 70%);
+    animation: waterEffect 8s linear infinite;
+    opacity: 0.5;
+}
+
+@keyframes waterEffect {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Bubbles for Frutiger Aero effect */
+.wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    box-shadow: 
+        60px 80px 0 rgba(255,255,255,0.1),
+        -40px 120px 0 rgba(255,255,255,0.1),
+        80px -30px 0 rgba(255,255,255,0.1);
+}
+
+
+/* Checkbox Enhancements */
+.remember-me input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.remember-me input[type="checkbox"]:checked {
+    background-color: #1DA1F2;
+    border-color: #1DA1F2;
+}
+
+.remember-me input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.remember-me input[type="checkbox"]:hover {
+    border-color: #1DA1F2;
+    box-shadow: 0 0 5px rgba(29, 161, 242, 0.5);
+}
+
+.remember-me input[type="checkbox"]:focus {
+    box-shadow: 0 0 8px rgba(29, 161, 242, 0.8);
+}
+
+/* Button Enhancements */
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(29, 161, 242, 0.3);
+}
+
+.btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 10px rgba(29, 161, 242, 0.4);
+}
+
+.btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transform: translateX(-100%);
+    transition: 0.6s;
+}
+
+.btn:hover::after {
+    transform: translateX(100%);
+}
+
+/* Login Popup Button Enhancements */
+.btnLogin-popup {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btnLogin-popup:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 5px 15px rgba(29, 161, 242, 0.4),
+        0 10px 25px rgba(29, 161, 242, 0.3);
+}
+
+.btnLogin-popup:active {
+    transform: translateY(0);
+    box-shadow: 
+        0 2px 5px rgba(29, 161, 242, 0.4),
+        0 5px 15px rgba(29, 161, 242, 0.3);
+}
+
+/* Link Enhancements */
+.forgot-password a,
+.register-link {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.forgot-password a::after,
+.register-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: #1DA1F2;
+    transition: width 0.3s ease;
+}
+
+.forgot-password a:hover::after,
+.register-link:hover::after {
+    width: 100%;
+}
+
+/* Input Field Enhancements */
+.input-box input {
+    transition: all 0.3s ease;
+}
+
+.input-box input:focus {
+    border-bottom-color: #1DA1F2;
+}
+
+.input-box input:focus + label {
+    color: #1DA1F2;
+}
+
+.input-box {
+    position: relative;
+    margin: 25px 0;
+    height: 50px;
+}
+
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    outline: none;
+    font-size: 1em;
+    color: #fff;
+    padding-left: 40px;
+    transition: all 0.3s ease;
+}
+
+.input-box label {
+    position: absolute;
+    top: 50%;
+    left: 40px;
+    color: #fff;
+    transform: translateY(-50%);
+    font-size: 1em;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.input-box .icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2em;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+/* Active state */
+.input-box.active label {
+    top: -5px;
+    font-size: 0.8em;
+    color: #1DA1F2;
+}
+
+.input-box.active .icon {
+    color: #1DA1F2;
+}
+
+.input-box.active input {
+    border-bottom-color: #1DA1F2;
+}
+
+/* Add this to your login.css */
+.navigation a[href="register.html"] {
+    color: #1DA1F2; /* Same blue as your active links */ 
+}
+
+.navigation a[href="register.html"]::after {
+    background: #1DA1F2; /* Blue underline on hover */
+}
+
+/* Optional: If you want it always blue (not just on hover) */
+.navigation a[href="register.html"].active {
+    color: #1DA1F2;
+}
+.login-redirect p {
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.login-link {
+    color: #1DA1F2;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-link:hover {
+    text-decoration: underline;
+} 
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .wrapper {
+            animation: float 6s ease-in-out infinite;
+        }
+</style>
+</head>
+<body>
+    <header>
+        <h2 class="logo">SOUNDSCOUTS</h2>
+        <nav class="navigation">
+            <a href="#">Premium</a>
+            <a href="#">Ajustes</a>
+            <a href="#">Descargar</a>
+            <span class="divider">|</span>
+            <a href="register.html">Registrarse</a>
+            <button class="btnLogin-popup">Iniciar Sesión</button>
+        </nav>
+    </header>
+
+    <div class="wrapper">
+        <div class="form-box login">
+            <h2>Inicio Sesión</h2>
+            <form id="loginForm">
+                <div class="input-box">
+                    <span class="icon"><i class="fas fa-envelope"></i></span>
+                    <input type="email" id="email" required placeholder=" ">
+                    <label>E-mail</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="password" required placeholder=" ">
+                    <label>Contraseña</label>
+                </div>
+                
+                <div class="remember-me">
+                    <input type="checkbox" id="remember">
+                    <label for="remember">Recordar</label>
+                </div>
+                
+                <div class="forgot-password">
+                    <a href="passwordolvidada.html">¿Olvidaste tu contraseña?</a>
+                </div>
+                
+                <button type="submit" class="btn">Ingresar</button>
+                
+                <div class="login-register">
+                    <p>¿Aún no tienes una cuenta? <a href="register.html" class="register-link">Regístrate</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login button handler
+            const loginPopupBtn = document.querySelector('.btnLogin-popup');
+            if (loginPopupBtn) {
+                loginPopupBtn.addEventListener('click', function() {
+                    window.location.href = 'login.html';
+                });
+            }
+
+            // Form submission handler
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Get form values
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    const rememberMe = document.getElementById('remember').checked;
+                    
+                    // Simple validation
+                    if (!email || !password) {
+                        alert('Por favor completa todos los campos');
+                        return;
+                    }
+                    
+                    // Simulate successful login
+                    alert(`¡Bienvenido de nuevo a SOUNDSCOUTS!\nEmail: ${email}`);
+                    // In a real app, you would redirect or handle the login
+                    // window.location.href = 'dashboard.html';
+                });
+            }
+            
+            // Input label animations
+            const inputBoxes = document.querySelectorAll('.input-box');
+            
+            inputBoxes.forEach(box => {
+                const input = box.querySelector('input');
+                const label = box.querySelector('label');
+                
+                // Initial check for prefilled values
+                if (input.value) {
+                    box.classList.add('active');
+                }
+                
+                // Focus events
+                input.addEventListener('focus', () => {
+                    box.classList.add('active');
+                });
+                
+                // Blur events
+                input.addEventListener('blur', () => {
+                    if (!input.value) {
+                        box.classList.remove('active');
+                    }
+                });
+                
+                // Input events for real-time updates
+                input.addEventListener('input', () => {
+                    if (input.value) {
+                        box.classList.add('active');
+                    } else {
+                        box.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Button click effects
+            const buttons = document.querySelectorAll('.btn, .btnLogin-popup');
+            buttons.forEach(button => {
+                button.addEventListener('mousedown', function() {
+                    this.style.transform = 'translateY(1px)';
+                });
+                button.addEventListener('mouseup', function() {
+                    this.style.transform = '';
+                });
+            });
+            
+            // Remember me checkbox label click
+            const rememberLabel = document.querySelector('.remember-me label');
+            if (rememberLabel) {
+                rememberLabel.addEventListener('click', function() {
+                    const checkbox = document.getElementById('remember');
+                    checkbox.checked = !checkbox.checked;
+                });
+            }
+            
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'login.html') {
+                const loginBtn = document.querySelector('.btnLogin-popup');
+                if (loginBtn) {
+                    loginBtn.classList.add('active');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
