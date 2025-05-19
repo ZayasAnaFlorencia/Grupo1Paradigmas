@@ -1,0 +1,119 @@
+<?php
+// Configuración de encriptación
+define('ENCRYPTION_KEY', 'una_clave_segura_y_compleja_32bytes');
+define('ENCRYPTION_METHOD', 'aes-256-cbc');
+
+abstract class JsonPersistable {
+    protected static $directory = 'data/';
+    
+    // Encriptar datos sensibles
+    protected static function encrypt($data) {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(ENCRYPTION_METHOD));
+        $encrypted = openssl_encrypt($data, ENCRYPTION_METHOD, ENCRYPTION_KEY, 0, $iv);
+        return base64_encode($iv . $encrypted);
+    }
+    
+    // Desencriptar datos
+    protected static function decrypt($data) {
+        $data = base64_decode($data);
+        $iv = substr($data, 0, openssl_cipher_iv_length(ENCRYPTION_METHOD));
+        $encrypted = substr($data, openssl_cipher_iv_length(ENCRYPTION_METHOD));
+        return openssl_decrypt($encrypted, ENCRYPTION_METHOD, ENCRYPTION_KEY, 0, $iv);
+    }
+    
+    // Guardar en archivo JSON
+    protected function saveToJson($filename, $data) {
+        if (!file_exists(self::$directory)) {
+            mkdir(self::$directory, 0755, true);
+        }
+        file_put_contents(self::$directory . $filename, json_encode($data, JSON_PRETTY_PRINT));
+    }
+    
+    // Leer desde archivo JSON
+    protected static function loadFromJson($filename) {
+        $path = self::$directory . $filename;
+        if (file_exists($path)) {
+            return json_decode(file_get_contents($path), true);
+        }
+        return null;
+    }
+    
+    abstract public function toArray();
+    abstract public static function fromArray($data);
+}
+
+class Usuario extends JsonPersistable {
+    private $id;
+    private $nombre;
+    private $email;
+    private $password_hash;
+    // ... otros campos
+    
+    public function __construct($data) {
+        $this->id = $data['id'] ?? null;
+        $this->nombre = $data['nombre'] ?? '';
+        $this->email = $data['email'] ?? '';
+        $this->password_hash = $data['password_hash'] ?? '';
+        // ... otros campos
+    }
+    
+    public function toArray() {
+        return [
+            'id' => $this->id,
+            'nombre' => $this->nombre,
+            'email' => self::encrypt($this->email), // Encriptar email
+            'password_hash' => $this->password_hash,
+            // ... otros campos
+        ];
+    }
+    
+    public static function fromArray($data) {
+        $data['email'] = self::decrypt($data['email']); // Desencriptar email
+        return new self($data);
+    }
+    
+    public function save() {
+        $filename = 'usuario_' . $this->id . '.json';
+        $this->saveToJson($filename, $this->toArray());
+    }
+    
+    public static function load($id) {
+        $filename = 'usuario_' . $id . '.json';
+        $data = self::loadFromJson($filename);
+        return $data ? self::fromArray($data) : null;
+    }
+}
+
+// Clases similares para Artista, Cancion, etc.
+?>
+/data/
+  /usuarios/
+    usuario_1.json
+    usuario_2.json
+    ...
+  /artistas/
+    artista_1.json
+    artista_2.json
+    ...
+  /canciones/
+    cancion_1.json
+    cancion_2.json
+    ...
+  /generos/
+  class HistorialReproduccion extends JsonPersistable {
+    private $id;
+    private $usuario_id;
+    private $cancion_id;
+    private $fecha_reproduccion;
+    
+    // ... métodos similares
+    
+    public function getUsuario() {
+        return Usuario::load($this->usuario_id);
+    }
+    
+    public function getCancion() {
+        return Cancion::load($this->cancion_id);
+    }
+}
+    generos.json
