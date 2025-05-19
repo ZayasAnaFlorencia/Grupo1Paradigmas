@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Usuario</title>
+</head>
+<body>
+    <h2>Formulario de Registro</h2>
+    <form action="procesar.php" method="POST" onsubmit="return validarFormulario()">
+        <label>Nombre: <input type="text" name="nombre" id="nombre" required></label><br><br>
+        <label>Email: <input type="email" name="email" id="email" required></label><br><br>
+        <label>Contraseña: <input type="password" name="password" id="password" required></label><br><br>
+        <label>Confirmar Contraseña: <input type="password" id="confirmar" required></label><br><br>
+        <input type="submit" value="Registrarse">
+    </form>
+
+    <script>
+        function validarFormulario() {
+            const password = document.getElementById('password').value;
+            const confirmar = document.getElementById('confirmar').value;
+
+            if (password.length < 6) {
+                alert("La contraseña debe tener al menos 6 caracteres.");
+                return false;
+            }
+
+            if (password !== confirmar) {
+                alert("Las contraseñas no coinciden.");
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+</body>
+</html>
