@@ -180,6 +180,33 @@
             margin-bottom: 1rem;
         }
 
+        .comment-form {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .comment-form textarea {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .comment-form button {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .recommendations-grid {
@@ -204,27 +231,27 @@
         </header>
         
         <div class="recommendations-grid">
-            <!-- Tarjeta de recomendación 1 -->
+            <!-- Tarjeta de recomendación 1 - Canción -->
             <div class="social-recommendation-card">
                 <div class="user-info">
                     <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="María López" class="user-avatar">
                     <div>
                         <h3>María López</h3>
-                        <span class="timestamp">Hace 2 horas</span>
+                        <span class="timestamp">9 de mayo de 2025</span>
                     </div>
                 </div>
                 
                 <div class="recommendation-content">
                     <div class="song-recommendation">
-                        <img src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Blinding Lights" class="cover">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Bohemian Rhapsody" class="cover">
                         <div class="song-info">
-                            <h4>Blinding Lights</h4>
-                            <p>The Weeknd</p>
+                            <h4>Bohemian Rhapsody</h4>
+                            <p>Queen</p>
                         </div>
                         <button class="play-button">▶</button>
                     </div>
                     
-                    <p class="recommendation-comment">"Esta canción me recuerda a nuestros viajes nocturnos, ¡te va a encantar!"</p>
+                    <p class="recommendation-comment">"Esta canción es simplemente increíble, ¡escúchala!"</p>
                 </div>
                 
                 <div class="actions">
@@ -234,27 +261,25 @@
                 </div>
             </div>
             
-            <!-- Tarjeta de recomendación 2 -->
+            <!-- Tarjeta de recomendación 2 - Canción -->
             <div class="social-recommendation-card">
                 <div class="user-info">
                     <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Carlos Ruiz" class="user-avatar">
                     <div>
                         <h3>Carlos Ruiz</h3>
-                        <span class="timestamp">Ayer</span>
+                        <span class="timestamp">8 de mayo de 2025</span>
                     </div>
                 </div>
                 
                 <div class="recommendation-content">
-                    <div class="playlist-recommendation">
-                        <img src="https://i.scdn.co/image/ab67706f00000002e4e2b5a3a0d6a1d4863c4c35" alt="Rock Clásico" class="cover">
-                        <div class="playlist-info">
-                            <h4>Rock Clásico Essentials</h4>
-                            <p>125 canciones</p>
+                    <div class="song-recommendation">
+                        <img src="https://i.scdn.co/image/ab67616d00001e026f1ff2d4a30e5415753e0b0a" alt="Like a Prayer" class="cover">
+                        <div class="song-info">
+                            <h4>Like a Prayer</h4>
+                            <p>Madonna</p>
                         </div>
                         <button class="play-button">▶</button>
                     </div>
-                    
-                    <p class="recommendation-comment">"Hice esta playlist para nuestro viaje de fin de semana, ¡échale un oído!"</p>
                 </div>
                 
                 <div class="actions">
@@ -264,34 +289,86 @@
                 </div>
             </div>
             
-            <!-- Tarjeta de recomendación 3 -->
+            <!-- Tarjeta de recomendación 3 - Canción con formulario de comentario -->
             <div class="social-recommendation-card">
                 <div class="user-info">
                     <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Ana Martínez" class="user-avatar">
                     <div>
                         <h3>Ana Martínez</h3>
-                        <span class="timestamp">Hace 3 días</span>
+                        <span class="timestamp">7 de mayo de 2025</span>
                     </div>
                 </div>
                 
                 <div class="recommendation-content">
                     <div class="song-recommendation">
-                        <img src="https://i.scdn.co/image/ab67616d00001e026f1ff2d4a30e5415753e0b0a" alt="Save Your Tears" class="cover">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02e4e2b5a3a0d6a1d4863c4c35" alt="Around the World" class="cover">
                         <div class="song-info">
-                            <h4>Save Your Tears</h4>
-                            <p>The Weeknd & Ariana Grande</p>
+                            <h4>Around the World</h4>
+                            <p>Daft Punk</p>
                         </div>
                         <button class="play-button">▶</button>
+                    </div>
+                    
+                    <p class="recommendation-comment">"Perfecta para estudiar o trabajar"</p>
+                    
+                    <!-- Formulario de comentario (aparece al hacer clic en Comentar) -->
+                    <div class="comment-form" style="display: none;">
+                        <textarea placeholder="Escribe tu comentario..."></textarea>
+                        <button>Enviar</button>
                     </div>
                 </div>
                 
                 <div class="actions">
                     <button class="like-button">👍 42</button>
-                    <button class="comment-button">💬 Comentar</button>
+                    <button class="comment-button" onclick="toggleCommentForm(this)">💬 Comentar</button>
                     <button class="share-button">↗ Compartir</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Función para mostrar/ocultar el formulario de comentarios
+        function toggleCommentForm(button) {
+            const card = button.closest('.social-recommendation-card');
+            const form = card.querySelector('.comment-form');
+            form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // Simulación de interacción con la base de datos
+        document.querySelectorAll('.like-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const currentLikes = parseInt(this.textContent.match(/\d+/) || 0);
+                const newLikes = this.classList.contains('liked') ? currentLikes - 1 : currentLikes + 1;
+                this.textContent = `👍 ${newLikes}`;
+                this.classList.toggle('liked');
+                
+                // Aquí iría la llamada real a la API para actualizar en la base de datos
+                console.log('Like actualizado en la base de datos');
+            });
+        });
+
+        // Simulación de envío de comentario
+        document.querySelectorAll('.comment-form button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const form = this.closest('.comment-form');
+                const textarea = form.querySelector('textarea');
+                const comment = textarea.value.trim();
+                
+                if (comment) {
+                    // Aquí iría la llamada real a la API para guardar el comentario
+                    console.log('Comentario guardado en la base de datos:', comment);
+                    
+                    // Limpiar el formulario
+                    textarea.value = '';
+                    form.style.display = 'none';
+                    
+                    // Mostrar mensaje de éxito
+                    alert('Comentario enviado con éxito');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
