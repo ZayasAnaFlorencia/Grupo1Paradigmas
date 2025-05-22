@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendaciones Sociales | MusicApp</title>
+    <style>
+        :root {
+            --primary: #1db954;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --bg-primary: #121212;
+            --bg-secondary: #181818;
+            --card-bg: #282828;
+            --border-color: #535353;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+        }
+
+        .social-recommendations-page {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .social-recommendation-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .social-recommendation-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 1rem;
+            object-fit: cover;
+        }
+
+        .timestamp {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .recommendation-content {
+            margin-bottom: 1rem;
+        }
+
+        .song-recommendation, 
+        .playlist-recommendation {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .cover {
+            width: 60px;
+            height: 60px;
+            margin-right: 1rem;
+            border-radius: 4px;
+        }
+
+        .song-info h4, 
+        .playlist-info h4 {
+            margin: 0 0 0.2rem 0;
+            font-size: 1rem;
+        }
+
+        .song-info p, 
+        .playlist-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .play-button {
+            background: var(--primary);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-button:hover {
+            transform: scale(1.05);
+        }
+
+        .recommendation-comment {
+            font-style: italic;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .actions button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .actions button:hover {
+            background: var(--bg-secondary);
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 2rem;
+            color: var(--primary);
+        }
+
+        .error-message {
+            color: #ff4d4d;
+            padding: 1rem;
+            background: rgba(255, 77, 77, 0.1);
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            
+            .social-recommendation-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="social-recommendations-page">
+        <header class="page-header">
+            <h1>Recomendaciones de tus amigos</h1>
+            <p>Descubre lo que están escuchando las personas que sigues</p>
+        </header>
+        
+        <div class="recommendations-grid">
+            <!-- Tarjeta de recomendación 1 -->
+            <div class="social-recommendation-card">
+                <div class="user-info">
+                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="María López" class="user-avatar">
+                    <div>
+                        <h3>María López</h3>
+                        <span class="timestamp">Hace 2 horas</span>
+                    </div>
+                </div>
+                
+                <div class="recommendation-content">
+                    <div class="song-recommendation">
+                        <img src="https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228" alt="Blinding Lights" class="cover">
+                        <div class="song-info">
+                            <h4>Blinding Lights</h4>
+                            <p>The Weeknd</p>
+                        </div>
+                        <button class="play-button">▶</button>
+                    </div>
+                    
+                    <p class="recommendation-comment">"Esta canción me recuerda a nuestros viajes nocturnos, ¡te va a encantar!"</p>
+                </div>
+                
+                <div class="actions">
+                    <button class="like-button">👍 24</button>
+                    <button class="comment-button">💬 Comentar</button>
+                    <button class="share-button">↗ Compartir</button>
+                </div>
+            </div>
+            
+            <!-- Tarjeta de recomendación 2 -->
+            <div class="social-recommendation-card">
+                <div class="user-info">
+                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Carlos Ruiz" class="user-avatar">
+                    <div>
+                        <h3>Carlos Ruiz</h3>
+                        <span class="timestamp">Ayer</span>
+                    </div>
+                </div>
+                
+                <div class="recommendation-content">
+                    <div class="playlist-recommendation">
+                        <img src="https://i.scdn.co/image/ab67706f00000002e4e2b5a3a0d6a1d4863c4c35" alt="Rock Clásico" class="cover">
+                        <div class="playlist-info">
+                            <h4>Rock Clásico Essentials</h4>
+                            <p>125 canciones</p>
+                        </div>
+                        <button class="play-button">▶</button>
+                    </div>
+                    
+                    <p class="recommendation-comment">"Hice esta playlist para nuestro viaje de fin de semana, ¡échale un oído!"</p>
+                </div>
+                
+                <div class="actions">
+                    <button class="like-button">👍 15</button>
+                    <button class="comment-button">💬 Comentar</button>
+                    <button class="share-button">↗ Compartir</button>
+                </div>
+            </div>
+            
+            <!-- Tarjeta de recomendación 3 -->
+            <div class="social-recommendation-card">
+                <div class="user-info">
+                    <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Ana Martínez" class="user-avatar">
+                    <div>
+                        <h3>Ana Martínez</h3>
+                        <span class="timestamp">Hace 3 días</span>
+                    </div>
+                </div>
+                
+                <div class="recommendation-content">
+                    <div class="song-recommendation">
+                        <img src="https://i.scdn.co/image/ab67616d00001e026f1ff2d4a30e5415753e0b0a" alt="Save Your Tears" class="cover">
+                        <div class="song-info">
+                            <h4>Save Your Tears</h4>
+                            <p>The Weeknd & Ariana Grande</p>
+                        </div>
+                        <button class="play-button">▶</button>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="like-button">👍 42</button>
+                    <button class="comment-button">💬 Comentar</button>
+                    <button class="share-button">↗ Compartir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
