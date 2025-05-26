@@ -1,0 +1,281 @@
+<?php
+class ArtistRecommender {
+    private $db;
+    
+    public function __construct($dbConnection) {
+        $this->db = $dbConnection;
+    }
+    
+    /**
+     * Obtiene recomendaciones de artistas basadas en el grafo social del usuario
+     * 
+     * @param int $userId ID del usuario para el que se generan las recomendaciones
+     * @param int $limit Número máximo de recomendaciones a devolver
+     * @return array Lista de artistas recomendados con información adicional
+     * @throws Exception Si ocurre un error en la base de datos
+     */
+    public function getRecommendations($userId, $limit = 5) {
+        try {
+            // Validación de parámetros
+            if (!is_numeric($userId) || $userId <= 0) {
+                throw new InvalidArgumentException("ID de usuario inválido");
+            }
+            
+            $limit = max(1, min(20, (int)$limit)); // Limitar entre 1 y 20
+            
+            // Paso 1: Obtener amigos del usuario
+            $friends = $this->getUserFriends($userId);
+            
+            if (empty($friends)) {
+                return $this->getFallbackRecommendations($limit);
+            }
+            
+            // Paso 2: Obtener artistas seguidos por los amigos
+            $friendArtists = $this->getArtistsFollowedByUsers($friends);
+            
+            // Paso 3: Obtener artistas que el usuario ya sigue
+            $userArtists = $this->getArtistsFollowedByUser($userId);
+            
+            // Paso 4: Filtrar artistas que el usuario no sigue aún
+            $recommendations = array_diff_key($friendArtists, $userArtists);
+            
+            // Paso 5: Ordenar por popularidad entre amigos
+            arsort($recommendations);
+            
+            // Paso 6: Obtener detalles de los artistas recomendados
+            $recommendedArtistIds = array_keys(array_slice($recommendations, 0, $limit, true));
+            
+            if (empty($recommendedArtistIds)) {
+                return $this->getFallbackRecommendations($limit);
+            }
+            
+            return $this->getArtistsDetails($recommendedArtistIds);
+        } catch (Exception $e) {
+            error_log("Error en getRecommendations: " . $e->getMessage());
+            return $this->getFallbackRecommendations($limit);
+        }
+    }
+    
+    /**
+     * Obtiene la lista de amigos de un usuario
+     * @param int $userId ID del usuario
+     * @return array Lista de IDs de amigos
+     * @throws Exception Si hay error en la base de datos
+     */
+    private function getUserFriends($userId) {
+        $friends = [];
+        
+        $query = "SELECT 
+                    CASE 
+                        WHEN usuario_id1 = ? THEN usuario_id2 
+                        ELSE usuario_id1 
+                    END AS friend_id
+                  FROM amistades 
+                  WHERE usuario_id1 = ? OR usuario_id2 = ?";
+        
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . $this->db->error);
+        }
+        
+        $stmt->bind_param("iii", $userId, $userId, $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $friends[] = (int)$row['friend_id'];
+        }
+        
+        $stmt->close();
+        return $friends;
+    }
+    
+    /**
+     * Obtiene artistas seguidos por una lista de usuarios
+     * @param array $userIds Lista de IDs de usuarios
+     * @return array Artistas con conteo de seguidores [artista_id => seguidores]
+     * @throws Exception Si hay error en la base de datos
+     */
+    private function getArtistsFollowedByUsers($userIds) {
+        if (empty($userIds)) return [];
+        
+        // Validar IDs
+        $userIds = array_filter(array_map('intval', $userIds));
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        
+        $query = "SELECT artista_id, COUNT(*) as follower_count 
+                  FROM seguimiento_artistas 
+                  WHERE usuario_id IN ($placeholders)
+                  GROUP BY artista_id";
+        
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . $this->db->error);
+        }
+        
+        // Bind dinámico de parámetros
+        $types = str_repeat('i', count($userIds));
+        $stmt->bind_param($types, ...$userIds);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $artists = [];
+        while ($row = $result->fetch_assoc()) {
+            $artists[(int)$row['artista_id']] = (int)$row['follower_count'];
+        }
+        
+        $stmt->close();
+        return $artists;
+    }
+    
+    /**
+     * Obtiene los artistas que sigue un usuario específico
+     * @param int $userId ID del usuario
+     * @return array Artistas seguidos [artista_id => true]
+     * @throws Exception Si hay error en la base de datos
+     */
+    private function getArtistsFollowedByUser($userId) {
+        $artists = [];
+        
+        $query = "SELECT artista_id FROM seguimiento_artistas WHERE usuario_id = ?";
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . $this->db->error);
+        }
+        
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $artists[(int)$row['artista_id']] = true;
+        }
+        
+        $stmt->close();
+        return $artists;
+    }
+    
+    /**
+     * Obtiene detalles completos de los artistas recomendados
+     * @param array $artistIds Lista de IDs de artistas
+     * @return array Detalles de los artistas
+     * @throws Exception Si hay error en la base de datos
+     */
+    private function getArtistsDetails($artistIds) {
+        if (empty($artistIds)) return [];
+        
+        // Validar IDs
+        $artistIds = array_filter(array_map('intval', $artistIds));
+        $placeholders = implode(',', array_fill(0, count($artistIds), '?'));
+        
+        $query = "SELECT id, nombre, genero_principal FROM artistas WHERE id IN ($placeholders)";
+        
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . $this->db->error);
+        }
+        
+        // Bind dinámico de parámetros
+        $types = str_repeat('i', count($artistIds));
+        $stmt->bind_param($types, ...$artistIds);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $artists = [];
+        while ($row = $result->fetch_assoc()) {
+            $artists[] = [
+                'id' => (int)$row['id'],
+                'nombre' => htmlspecialchars($row['nombre']),
+                'genero' => htmlspecialchars($row['genero_principal']),
+                'seguido_por_amigos' => true
+            ];
+        }
+        
+        $stmt->close();
+        return $artists;
+    }
+    
+    /**
+     * Recomendaciones de respaldo cuando no hay suficientes datos sociales
+     * @param int $limit Número de recomendaciones
+     * @return array Artistas aleatorios
+     * @throws Exception Si hay error en la base de datos
+     */
+    private function getFallbackRecommendations($limit) {
+        $query = "SELECT id, nombre, genero_principal 
+                  FROM artistas 
+                  ORDER BY RAND() 
+                  LIMIT ?";
+        
+        $stmt = $this->db->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta: " . $this->db->error);
+        }
+        
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $artists = [];
+        while ($row = $result->fetch_assoc()) {
+            $artists[] = [
+                'id' => (int)$row['id'],
+                'nombre' => htmlspecialchars($row['nombre']),
+                'genero' => htmlspecialchars($row['genero_principal']),
+                'seguido_por_amigos' => false
+            ];
+        }
+        
+        $stmt->close();
+        return $artists;
+    }
+}
+?>
+//Implementación Web Segura
+<?php
+require_once 'ArtistRecommender.php';
+require_once 'db_connection.php';
+require_once 'auth_check.php'; // Verificar autenticación
+
+// Obtener ID de usuario seguro
+$userId = (int)$_SESSION['user_id'];
+
+if ($userId > 0) {
+    try {
+        $recommender = new ArtistRecommender($db);
+        $recommendations = $recommender->getRecommendations($userId, 5);
+        
+        echo '<div class="recommendations-container">';
+        echo '<h3>Artistas recomendados</h3>';
+        
+        if (!empty($recommendations)) {
+            echo '<ul class="artist-recommendations">';
+            foreach ($recommendations as $artist) {
+                echo '<li data-artist-id="' . (int)$artist['id'] . '">';
+                echo '<h4>' . htmlspecialchars($artist['nombre'], ENT_QUOTES, 'UTF-8') . '</h4>';
+                echo '<p>Género: ' . htmlspecialchars($artist['genero'], ENT_QUOTES, 'UTF-8') . '</p>';
+                
+                if ($artist['seguido_por_amigos']) {
+                    echo '<p class="social-proof"><i class="fas fa-users"></i> Recomendado por amigos</p>';
+                } else {
+                    echo '<p class="fallback"><i class="fas fa-random"></i> Tal vez te interese</p>';
+                }
+                
+                echo '</li>';
+            }
+            echo '</ul>';
+        } else {
+            echo '<p class="no-results">No tenemos recomendaciones en este momento.</p>';
+        }
+        
+        echo '</div>';
+        
+    } catch (Exception $e) {
+        error_log("Error mostrando recomendaciones: " . $e->getMessage());
+        echo '<p class="error">Error al cargar recomendaciones. Intente más tarde.</p>';
+    }
+} else {
+    header('Location: login.php');
+    exit;
+}
+?>
