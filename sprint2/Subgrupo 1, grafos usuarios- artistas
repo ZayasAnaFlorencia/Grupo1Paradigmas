@@ -1,0 +1,319 @@
+<?php
+class SoundScoutsDB {
+    private $host = '127.0.0.1';
+    private $db_name = 'streaming_recommendation'; // Actualizado al nombre de tu BD
+    private $username = 'root';
+    private $password = "";
+    private $conn;
+
+    public function getConnection() {
+        $this->conn = null;
+        try {
+            $this->conn = new PDO(
+                "mysql:host=".$this->host.";dbname=".$this->db_name,
+                $this->username,
+                $this->password,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false
+                ]
+            );
+            $this->conn->exec("set names utf8mb4");
+        } catch(PDOException $exception) {
+            error_log("SoundScouts DB Error: " . $exception->getMessage());
+            throw new RuntimeException("Database connection error");
+        }
+        return $this->conn;
+    }
+}
+<?php
+require_once 'SoundScoutsDB.php';
+
+class SocialMusicGraph {
+    private $db;
+
+    public function __construct() {
+        $dbConnection = new SoundScoutsDB();
+        $this->db = $dbConnection->getConnection();
+    }
+
+    /**
+     * Obtiene recomendaciones de artistas basadas en el grafo social
+     */
+    public function getSocialRecommendations($user_id, $limit = 10) {
+        $query = "
+            SELECT 
+                a.id AS artista_id,
+                a.nombre AS artista_nombre,
+                a.genero_principal,
+                COUNT(*) AS seguidores_amigos,
+                GROUP_CONCAT(DISTINCT u2.nombre SEPARATOR ', ') AS amigos_que_siguen
+            FROM 
+                usuarios u
+            JOIN 
+                amistades am ON (u.id = am.usuario_id1 OR u.id = am.usuario_id2)
+            JOIN 
+                usuarios u2 ON (u2.id = CASE 
+                                        WHEN u.id = am.usuario_id1 THEN am.usuario_id2 
+                                        ELSE am.usuario_id1 
+                                    END)
+            JOIN 
+                seguimiento_artistas sa ON sa.usuario_id = u2.id
+            JOIN 
+                artistas a ON a.id = sa.artista_id
+            LEFT JOIN 
+                seguimiento_artistas sa_user ON sa_user.usuario_id = u.id AND sa_user.artista_id = a.id
+            LEFT JOIN
+                favoritos_generos fg ON fg.usuario_id = u.id
+            WHERE 
+                u.id = :usuario_id
+                AND sa_user.artista_id IS NULL
+            GROUP BY 
+                a.id, a.nombre, a.genero_principal
+            ORDER BY 
+                COUNT(*) DESC
+            LIMIT :limit;
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':usuario_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene estadísticas sociales de un artista específico
+     */
+    public function getArtistSocialStats($user_id, $artist_id) {
+        $query = "
+            SELECT 
+                a.nombre AS artista_nombre,
+                COUNT(DISTINCT sa.usuario_id) AS total_seguidores,
+                COUNT(DISTINCT CASE 
+                    WHEN am.usuario_id1 = :user_id OR am.usuario_id2 = :user_id THEN 
+                        CASE WHEN am.usuario_id1 = :user_id THEN am.usuario_id2 ELSE am.usuario_id1 END
+                    END) AS seguidores_amigos,
+                GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') AS generos_relacionados
+            FROM 
+                artistas a
+            LEFT JOIN 
+                seguimiento_artistas sa ON a.id = sa.artista_id
+            LEFT JOIN 
+                amistades am ON (sa.usuario_id = am.usuario_id1 OR sa.usuario_id = am.usuario_id2)
+            LEFT JOIN 
+                canciones c ON c.artista_id = a.id
+            LEFT JOIN 
+                generos_musicales g ON c.genero = g.nombre OR a.genero_principal = g.nombre
+            WHERE 
+                a.id = :artist_id
+            GROUP BY 
+                a.id;
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':artist_id', $artist_id, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch();
+    }
+
+    /**
+     * Encuentra amigos con gustos musicales compatibles
+     */
+    public function getCompatibleFriends($user_id, $limit = 5) {
+        $query = "
+            SELECT 
+                u.id AS amigo_id,
+                u.nombre AS amigo_nombre,
+                COUNT(DISTINCT sa.artista_id) AS artistas_comunes,
+                COUNT(DISTINCT fg.genero_nombre) AS generos_comunes,
+                GROUP_CONCAT(DISTINCT a.nombre SEPARATOR ', ') AS artistas_compartidos
+            FROM 
+                usuarios u
+            JOIN 
+                amistades am ON (u.id = am.usuario_id1 OR u.id = am.usuario_id2)
+            JOIN 
+                usuarios u2 ON (u2.id = CASE 
+                                        WHEN u.id = am.usuario_id1 THEN am.usuario_id2 
+                                        ELSE am.usuario_id1 
+                                    END AND u2.id = :user_id)
+            LEFT JOIN 
+                seguimiento_artistas sa ON sa.usuario_id = u.id
+            LEFT JOIN 
+                seguimiento_artistas sa_user ON sa_user.artista_id = sa.artista_id AND sa_user.usuario_id = :user_id
+            LEFT JOIN 
+                favoritos_generos fg ON fg.usuario_id = u.id
+            LEFT JOIN 
+                favoritos_generos fg_user ON fg_user.genero_nombre = fg.genero_nombre AND fg_user.usuario_id = :user_id
+            LEFT JOIN 
+                artistas a ON a.id = sa.artista_id
+            WHERE 
+                sa_user.artista_id IS NOT NULL OR fg_user.genero_nombre IS NOT NULL
+            GROUP BY 
+                u.id, u.nombre
+            ORDER BY 
+                artistas_comunes DESC, generos_comunes DESC
+            LIMIT :limit;
+        ";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll();
+    }
+}
+<?php
+require_once 'SoundScoutsDB.php';
+require_once 'SocialMusicGraph.php';
+
+header('Content-Type: application/json; charset=UTF-8');
+
+try {
+    $socialGraph = new SocialMusicGraph();
+    $user_id = authenticateUser();
+    $response = [];
+    $request = $_SERVER['REQUEST_URI'];
+
+    if (strpos($request, '/api/artist/stats') !== false && isset($_GET['artist_id'])) {
+        $artist_id = (int)$_GET['artist_id'];
+        $response = $socialGraph->getArtistSocialStats($user_id, $artist_id);
+    } elseif (strpos($request, '/api/social/recommendations') !== false) {
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        $response = $socialGraph->getSocialRecommendations($user_id, $limit);
+    } elseif (strpos($request, '/api/social/compatible-friends') !== false) {
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+        $response = $socialGraph->getCompatibleFriends($user_id, $limit);
+    } else {
+        throw new InvalidArgumentException("Endpoint no válido");
+    }
+
+    echo json_encode([
+        'success' => true, 
+        'data' => $response, 
+        'timestamp' => time(),
+        'user_id' => $user_id
+    ]);
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false, 
+        'error' => $e->getMessage(), 
+        'timestamp' => time()
+    ]);
+}
+
+function authenticateUser() {
+    if (!isset($_GET['user_id']) || !is_numeric($_GET['user_id'])) {
+        throw new RuntimeException("Autenticación requerida");
+    }
+    return (int)$_GET['user_id'];
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundScouts - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .artist-card, .friend-card {
+            transition: transform 0.3s;
+        }
+        .artist-card:hover, .friend-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="mb-4">SoundScouts Dashboard</h1>
+        
+        <div class="row mb-5">
+            <div class="col-md-8">
+                <h2>Recomendaciones de Artistas</h2>
+                <div class="row" id="artist-recommendations">
+                    <!-- Se llena con AJAX -->
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <h2>Amigos Compatibles</h2>
+                <div class="row" id="compatible-friends">
+                    <!-- Se llena con AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = new URLSearchParams(window.location.search).get('user_id');
+            
+            // Cargar recomendaciones de artistas
+            fetch(`api/social/recommendations?user_id=${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const container = document.getElementById('artist-recommendations');
+                        data.data.forEach(artist => {
+                            container.innerHTML += `
+                                <div class="col-md-6 mb-4">
+                                    <div class="card artist-card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${artist.artista_nombre}</h5>
+                                            <p class="card-text">
+                                                <span class="badge bg-primary">${artist.genero_principal}</span>
+                                                <small class="text-muted d-block mt-2">
+                                                    Seguido por ${artist.seguidores_amigos} amigos: ${artist.amigos_que_siguen}
+                                                </small>
+                                            </p>
+                                            <a href="artist_stats.php?artist_id=${artist.artista_id}&user_id=${userId}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                Ver estadísticas
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+
+            // Cargar amigos compatibles
+            fetch(`api/social/compatible-friends?user_id=${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const container = document.getElementById('compatible-friends');
+                        data.data.forEach(friend => {
+                            container.innerHTML += `
+                                <div class="col-12 mb-3">
+                                    <div class="card friend-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${friend.amigo_nombre}</h5>
+                                            <p class="card-text">
+                                                <span class="badge bg-success">${friend.artistas_comunes} artistas en común</span>
+                                                <span class="badge bg-info">${friend.generos_comunes} géneros en común</span>
+                                                <small class="text-muted d-block mt-2">
+                                                    Artistas: ${friend.artistas_compartidos}
+                                                </small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+        });
+    </script>
+</body>
+</html>
