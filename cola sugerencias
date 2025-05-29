@@ -1,0 +1,95 @@
+<?php
+/**
+ * CLASE ColaSugerencias
+ * Genera una cola de sugerencias de canciones basada en los géneros preferidos del usuario
+ */
+
+class ColaSugerencias {
+    private $arbolGeneros;      // Instancia del arbol de generos musicales
+    private $historial;         // Historial de canciones escuchadas (array de arrays)
+    private $sugerencias;       // Cola de sugerencias (array de canciones)
+    private $visitadas;         // Canciones ya sugeridas o escuchadas
+
+    /**
+     * Constructor de la clase
+     * @param GenerosTree $arbolGeneros - Arbol completo de generos
+     * @param array $historial - Historial de canciones del usuario (array con 'genero' y 'id')
+     */
+    public function __construct($arbolGeneros, $historial) {
+        $this->arbolGeneros = $arbolGeneros;
+        $this->historial = $historial;
+        $this->sugerencias = array(); // Cola vacia
+        $this->visitadas = array();   // Para evitar duplicados
+
+        // Cargar sugerencias al construir
+        $this->generarSugerencias();
+    }
+
+    /**
+     * Analiza el historial y genera la cola de sugerencias
+     */
+    private function generarSugerencias() {
+        // Paso 1: contar cuantas veces aparece cada genero
+        $conteoGeneros = array();
+        foreach ($this->historial as $registro) {
+            $genero = $registro['genero'];
+            $idCancion = $registro['id'];
+            $this->visitadas[$idCancion] = true; // marcar como escuchada
+
+            if (!isset($conteoGeneros[$genero])) {
+                $conteoGeneros[$genero] = 0;
+            }
+            $conteoGeneros[$genero]++;
+        }
+
+        // Paso 2: ordenar generos por popularidad
+        arsort($conteoGeneros);
+
+        // Paso 3: buscar canciones en esos generos (y subgeneros si existen)
+        foreach (array_keys($conteoGeneros) as $genero) {
+            $nodo = $this->arbolGeneros->buscarGenero($genero);
+            if ($nodo) {
+                $this->agregarCancionesDesdeNodo($nodo);
+            }
+        }
+    }
+
+    /**
+     * Agrega canciones desde un nodo del arbol (incluyendo subgeneros)
+     * @param GeneroNode $nodo - Nodo actual
+     */
+    private function agregarCancionesDesdeNodo($nodo) {
+        foreach ($nodo->canciones as $cancion) {
+            $id = $cancion['id'];
+            if (!isset($this->visitadas[$id])) {
+                $this->sugerencias[] = $cancion; // agregar a la cola
+                $this->visitadas[$id] = true;    // marcar como usada
+            }
+        }
+
+        // Recorrer subgeneros recursivamente
+        if ($nodo->left !== null && $nodo->left->nivel > $nodo->nivel) {
+            $this->agregarCancionesDesdeNodo($nodo->left);
+        }
+        if ($nodo->right !== null && $nodo->right->nivel > $nodo->nivel) {
+            $this->agregarCancionesDesdeNodo($nodo->right);
+        }
+    }
+
+    /**
+     * Devuelve la siguiente cancion sugerida (FIFO)
+     * @return array|null - Cancion sugerida o null si ya no hay
+     */
+    public function siguienteSugerencia() {
+        return array_shift($this->sugerencias);
+    }
+
+    /**
+     * Devuelve todas las sugerencias disponibles
+     * @return array - Lista de canciones sugeridas
+     */
+    public function obtenerSugerencias() {
+        return $this->sugerencias;
+    }
+}
+?>
