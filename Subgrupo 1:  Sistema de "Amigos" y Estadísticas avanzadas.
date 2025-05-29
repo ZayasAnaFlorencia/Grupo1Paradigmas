@@ -1,0 +1,414 @@
+
+-- Asegurémonos de que la tabla amistades tenga todas las columnas necesarias
+ALTER TABLE `amistades` 
+ADD COLUMN `estado` ENUM('pendiente', 'aceptada', 'rechazada') NOT NULL DEFAULT 'aceptada',
+ADD COLUMN `fecha_solicitud` TIMESTAMP NULL DEFAULT NULL,
+ADD COLUMN `fecha_actualizacion` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP,
+ADD INDEX `idx_amistades_estado` (`estado`),
+ADD INDEX `idx_amistades_usuario1` (`usuario_id1`, `estado`),
+ADD INDEX `idx_amistades_usuario2` (`usuario_id2`, `estado`);
+
+-- Añadir columna para almacenar preferencias de recomendación
+ALTER TABLE `usuarios` 
+ADD COLUMN `recibir_recomendaciones` TINYINT(1) NOT NULL DEFAULT 1,
+ADD INDEX `idx_usuario_recomendaciones` (`recibir_recomendaciones`);
+
+-- Tabla para almacenar recomendaciones generadas
+CREATE TABLE IF NOT EXISTS `recomendaciones_amigos` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `usuario_id` INT NOT NULL,
+  `amigo_id` INT NOT NULL,
+  `artista_id` INT NOT NULL,
+  `fecha_recomendacion` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+  `vista` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  INDEX `fk_recomendacion_usuario` (`usuario_id`),
+  INDEX `fk_recomendacion_amigo` (`amigo_id`),
+  INDEX `fk_recomendacion_artista` (`artista_id`),
+  CONSTRAINT `fk_recomendacion_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `fk_recomendacion_amigo` FOREIGN KEY (`amigo_id`) REFERENCES `usuarios` (`id`),
+  CONSTRAINT `fk_recomendacion_artista` FOREIGN KEY (`artista_id`) REFERENCES `artistas` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+<?php
+class FriendshipManager {
+    private $db;
+
+    public function __construct(PDO $db) {
+        $this->db = $db;
+    }
+
+    // [Mantener todos los métodos existentes de parte2.php...]
+
+    /**
+     * Genera recomendaciones basadas en amigos
+     */
+    public function generateFriendRecommendations(int $userId): int {
+        // Limpiar recomendaciones anteriores no vistas
+        $this->db->prepare("
+            DELETE FROM recomendaciones_amigos 
+            WHERE usuario_id = :userId AND vista = 0
+        ")->execute([':userId' => $userId]);
+
+        // Obtener artistas seguidos por amigos que el usuario no sigue
+        $query = "
+            INSERT INTO recomendaciones_amigos 
+            (usuario_id, amigo_id, artista_id)
+            SELECT 
+                :userId, 
+                sa.usuario_id,
+                sa.artista_id
+            FROM 
+                seguimiento_artistas sa
+            JOIN 
+                amistades a ON (
+                    (a.usuario_id1 = :userId AND a.usuario_id2 = sa.usuario_id) OR
+                    (a.usuario_id2 = :userId AND a.usuario_id1 = sa.usuario_id)
+                )
+            WHERE 
+                a.estado = 'aceptada'
+                AND sa.artista_id NOT IN (
+                    SELECT artista_id FROM seguimiento_artistas WHERE usuario_id = :userId
+                )
+            GROUP BY 
+                sa.artista_id, sa.usuario_id
+            HAVING 
+                COUNT(*) > 0
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([':userId' => $userId]);
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Obtiene recomendaciones de artistas basadas en amigos
+     */
+    public function getFriendRecommendations(int $userId, int $limit = 10): array {
+        $stmt = $this->db->prepare("
+            SELECT 
+                r.id as recomendacion_id,
+                a.id as artista_id,
+                a.nombre as artista_nombre,
+                a.genero_principal,
+                u.id as amigo_id,
+                u.nombre as amigo_nombre,
+                COUNT(*) OVER (PARTITION BY r.artista_id) as amigos_que_siguen,
+                r.fecha_recomendacion
+            FROM 
+                recomendaciones_amigos r
+            JOIN 
+                artistas a ON r.artista_id = a.id
+            JOIN 
+                usuarios u ON r.amigo_id = u.id
+            WHERE 
+                r.usuario_id = :userId
+            ORDER BY 
+                amigos_que_siguen DESC,
+                r.fecha_recomendacion DESC
+            LIMIT :limit
+        ");
+
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Marca una recomendación como vista
+     */
+    public function markRecommendationAsViewed(int $recommendationId, int $userId): bool {
+        $stmt = $this->db->prepare("
+            UPDATE recomendaciones_amigos 
+            SET vista = 1 
+            WHERE id = :id AND usuario_id = :userId
+        ");
+        
+        return $stmt->execute([
+            ':id' => $recommendationId,
+            ':userId' => $userId
+        ]);
+    }
+}
+```
+
+// [Mantener los casos existentes de parte3.php...]
+
+elseif (strpos($request, '/api/friends/recommendations') !== false) {
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+    $refresh = isset($_GET['refresh']) ? (bool)$_GET['refresh'] : false;
+    
+    $friendshipManager = new FriendshipManager($socialGraph->getDb());
+    
+    if ($refresh) {
+        $friendshipManager->generateFriendRecommendations($user_id);
+    }
+    
+    $response = $friendshipManager->getFriendRecommendations($user_id, $limit);
+} 
+elseif (strpos($request, '/api/friends/mark-recommendation') !== false && isset($_GET['rec_id'])) {
+    $recId = (int)$_GET['rec_id'];
+    $friendshipManager = new FriendshipManager($socialGraph->getDb());
+    $success = $friendshipManager->markRecommendationAsViewed($recId, $user_id);
+    $response = ['success' => $success];
+}
+```
+
+
+class MusicSocialGraph {
+    // [Mantener todos los métodos existentes...]
+
+    /**
+     * Obtiene artistas en común con un amigo específico
+     */
+    public function getCommonArtistsWithFriend(int $userId, int $friendId): array {
+        try {
+            $query = "
+                SELECT 
+                    a.id, 
+                    a.nombre, 
+                    a.genero_principal,
+                    sa1.fecha_seguimiento as tu_fecha_seguimiento,
+                    sa2.fecha_seguimiento as amigo_fecha_seguimiento
+                FROM 
+                    artistas a
+                JOIN 
+                    seguimiento_artistas sa1 ON a.id = sa1.artista_id AND sa1.usuario_id = :userId
+                JOIN 
+                    seguimiento_artistas sa2 ON a.id = sa2.artista_id AND sa2.usuario_id = :friendId
+                WHERE 
+                    EXISTS (
+                        SELECT 1 FROM amistades 
+                        WHERE 
+                            ((usuario_id1 = :userId AND usuario_id2 = :friendId) OR
+                             (usuario_id1 = :friendId AND usuario_id2 = :userId))
+                            AND estado = 'aceptada'
+                    )
+                ORDER BY 
+                    a.nombre
+            ";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([
+                ':userId' => $userId,
+                ':friendId' => $friendId
+            ]);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error en getCommonArtistsWithFriend: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene amigos con mayor afinidad musical
+     */
+    public function getTopMusicalMatches(int $userId, int $limit = 5): array {
+        try {
+            $query = "
+                SELECT 
+                    u.id,
+                    u.nombre,
+                    u.email,
+                    COUNT(DISTINCT sa.artista_id) as artistas_comunes,
+                    GROUP_CONCAT(DISTINCT a.nombre SEPARATOR '|') as nombres_artistas
+                FROM 
+                    usuarios u
+                JOIN 
+                    amistades am ON (
+                        (am.usuario_id1 = :userId AND am.usuario_id2 = u.id) OR
+                        (am.usuario_id2 = :userId AND am.usuario_id1 = u.id)
+                    )
+                JOIN 
+                    seguimiento_artistas sa ON sa.usuario_id = u.id
+                JOIN 
+                    seguimiento_artistas sa2 ON sa2.artista_id = sa.artista_id AND sa2.usuario_id = :userId
+                JOIN 
+                    artistas a ON a.id = sa.artista_id
+                WHERE 
+                    am.estado = 'aceptada'
+                GROUP BY 
+                    u.id, u.nombre, u.email
+                ORDER BY 
+                    artistas_comunes DESC
+                LIMIT :limit
+            ";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Procesar los resultados para mejor formato
+            foreach ($matches as &$match) {
+                $match['nombres_artistas'] = explode('|', $match['nombres_artistas']);
+                $match['match_percentage'] = min(100, $match['artistas_comunes'] * 10); // Fórmula simple
+            }
+            
+            return $matches;
+        } catch (PDOException $e) {
+            error_log("Error en getTopMusicalMatches: " . $e->getMessage());
+            return [];
+        }
+    }
+}
+```
+
+// [Agregar estos casos al controlador API existente]
+
+elseif (strpos($request, '/api/friends/common-artists') !== false && isset($_GET['friend_id'])) {
+    $friendId = (int)$_GET['friend_id'];
+    $response = $socialGraph->getCommonArtistsWithFriend($user_id, $friendId);
+} 
+elseif (strpos($request, '/api/friends/top-matches') !== false) {
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+    $response = $socialGraph->getTopMusicalMatches($user_id, $limit);
+}
+```
+
+<div class="container mt-4">
+    <h2>Recomendaciones de tus Amigos</h2>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Artistas que siguen tus amigos</span>
+                    <button class="btn btn-sm btn-primary" id="refreshRecs">
+                        Actualizar recomendaciones
+                    </button>
+                </div>
+                <div class="card-body" id="friendRecommendations">
+                    <!-- Aquí se cargarán las recomendaciones via AJAX -->
+                    <div class="text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    Amigos con gustos similares
+                </div>
+                <div class="card-body" id="topMatches">
+                    <!-- Aquí se cargarán los amigos con gustos similares -->
+                    <div class="text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Cargar recomendaciones al inicio
+    loadFriendRecommendations();
+    loadTopMatches();
+
+    // Botón para refrescar recomendaciones
+    $('#refreshRecs').click(function() {
+        loadFriendRecommendations(true);
+    });
+
+    function loadFriendRecommendations(refresh = false) {
+        $('#friendRecommendations').html('<div class="text-center my-4"><div class="spinner-border text-primary" role="status"></div></div>');
+        
+        $.get(`/api/friends/recommendations?refresh=${refresh ? 1 : 0}`, function(data) {
+            if (data.length === 0) {
+                $('#friendRecommendations').html('<div class="alert alert-info">No hay recomendaciones disponibles</div>');
+                return;
+            }
+
+            let html = '';
+            data.forEach(rec => {
+                html += `
+                <div class="mb-3 p-3 border-bottom recommendation-item" data-rec-id="${rec.recomendacion_id}">
+                    <div class="d-flex justify-content-between">
+                        <h5>${rec.artista_nombre}</h5>
+                        <span class="badge bg-primary">${rec.genero_principal}</span>
+                    </div>
+                    <p class="mb-1">Recomendado por <strong>${rec.amigo_nombre}</strong></p>
+                    <p class="text-muted small">${rec.amigos_que_siguen} amigos lo siguen</p>
+                    <button class="btn btn-sm btn-outline-success follow-artist" 
+                            data-artist-id="${rec.artista_id}">
+                        Seguir artista
+                    </button>
+                </div>`;
+            });
+            
+            $('#friendRecommendations').html(html);
+            
+            // Manejar clic en "Seguir artista"
+            $('.follow-artist').click(function() {
+                const artistId = $(this).data('artist-id');
+                const recItem = $(this).closest('.recommendation-item');
+                const recId = recItem.data('rec-id');
+                
+                $.post('/api/artists/follow', { artist_id: artistId }, function() {
+                    recItem.fadeOut();
+                    $.post('/api/friends/mark-recommendation', { rec_id: recId });
+                });
+            });
+        });
+    }
+
+    function loadTopMatches() {
+        $('#topMatches').html('<div class="text-center my-4"><div class="spinner-border text-primary" role="status"></div></div>');
+        
+        $.get('/api/friends/top-matches', function(data) {
+            if (data.length === 0) {
+                $('#topMatches').html('<div class="alert alert-info">No hay datos disponibles</div>');
+                return;
+            }
+
+            let html = '';
+            data.forEach(match => {
+                html += `
+                <div class="mb-3 p-2 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">${match.nombre}</h6>
+                        <span class="badge bg-success">${match.match_percentage}% match</span>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: ${match.match_percentage}%">
+                        </div>
+                    </div>
+                    <p class="small text-muted mt-1">
+                        ${match.artistas_comunes} artistas en común
+                    </p>
+                    <button class="btn btn-sm btn-outline-primary view-common-artists" 
+                            data-friend-id="${match.id}">
+                        Ver artistas
+                    </button>
+                </div>`;
+            });
+            
+            $('#topMatches').html(html);
+            
+            // Manejar clic en "Ver artistas"
+            $('.view-common-artists').click(function() {
+                const friendId = $(this).data('friend-id');
+                window.location.href = `/friends/common-artists?friend_id=${friendId}`;
+            });
+        });
+    }
+});
+</script>
+```
