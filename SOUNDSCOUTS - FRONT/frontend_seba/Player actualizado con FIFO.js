@@ -2,16 +2,16 @@ const songs = [
     {
         title: "Bohemian Rhapsody",
         artist: "Queen",
-        duration: "4:15",
-        cover: "https://i.scdn.co/image/ab67616d00001e02ff9ca10b55ce82ae553c8228",
-        audioSrc: "" // Reemplazar si tienes archivo
+        duration: "5:58",
+        cover: "https://i.scdn.co/image/ab67616d0000b273e1b68f28db6365c387dc6a03",
+        audioSrc: "Queen - Bohemian Rhapsody.mp3" // Agregar URL del archivo de audio si es necesario
     },
     {
         title: "Blinding Lights",
         artist: "The Weeknd",
-        duration: "3:20",
-        cover: "https://i.scdn.co/image/ab67616d00001e02a3a0d58a7a2a9a0e8a0b9e9e",
-        audioSrc: ""
+        duration: "3:23",
+        cover: "https://i.scdn.co/image/ab67616d0000b273a3eff72f62782fb589a492f9",
+        audioSrc: "The Weeknd - Blinding Lights.mp3"
     }
 ];
 
