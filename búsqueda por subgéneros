@@ -1,0 +1,416 @@
+<?php
+// ====================== CONFIGURACIÓN ======================
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+session_start();
+
+// Configuración de la base de datos
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'soundscouts');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+
+class Database {
+    private $connection;
+
+    public function __construct() {
+        try {
+            $this->connection = new PDO(
+                "mysql:host=".DB_HOST.";dbname=".DB_NAME,
+                DB_USER,
+                DB_PASS
+            );
+            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch(PDOException $e) {
+            die("Error de conexión: " . $e->getMessage());
+        }
+    }
+
+    public function getConnection() {
+        return $this->connection;
+    }
+}
+
+// ====================== MODELOS ======================
+class GeneroNode {
+    public $nombre;
+    public $nivel;
+    public $left;
+    public $right;
+    public $canciones;
+    public $padre;
+
+    public function __construct($nombre, $nivel, $padre = null) {
+        $this->nombre = $nombre;
+        $this->nivel = $nivel;
+        $this->padre = $padre;
+        $this->left = null;
+        $this->right = null;
+        $this->canciones = [];
+    }
+}
+
+class GenerosTree {
+    private $root;
+    private $pdo;
+
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+        $this->construirArbol();
+    }
+
+    public function construirArbol() {
+        try {
+            $stmt = $this->pdo->query("SELECT nombre, padre, nivel FROM generos_musicales ORDER BY nivel, nombre");
+            $generos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($generos as $genero) {
+                if ($genero['nivel'] == 0) {
+                    $this->root = $this->insertar($this->root, $genero['nombre'], $genero['nivel']);
+                }
+            }
+
+            foreach ($generos as $genero) {
+                if ($genero['nivel'] > 0) {
+                    $this->insertarSubgenero($genero['nombre'], $genero['padre'], $genero['nivel']);
+                }
+            }
+
+            $this->cargarCanciones();
+        } catch (PDOException $e) {
+            error_log("Error al construir árbol: " . $e->getMessage());
+        }
+    }
+
+    private function insertar($node, $nombre, $nivel) {
+        if ($node === null) return new GeneroNode($nombre, $nivel);
+        
+        if (strcmp($nombre, $node->nombre) < 0) {
+            $node->left = $this->insertar($node->left, $nombre, $nivel);
+        } else {
+            $node->right = $this->insertar($node->right, $nombre, $nivel);
+        }
+        
+        return $node;
+    }
+
+    private function insertarSubgenero($nombre, $padreNombre, $nivel) {
+        $parentNode = $this->buscar($this->root, $padreNombre);
+        if ($parentNode !== null) {
+            $newNode = $this->insertar($parentNode, $nombre, $nivel);
+            $newNode->padre = $parentNode;
+            return true;
+        }
+        return false;
+    }
+
+    public function buscar($node, $nombre) {
+        if ($node === null || strcasecmp($node->nombre, $nombre) === 0) return $node;
+        return strcasecmp($nombre, $node->nombre) < 0 
+            ? $this->buscar($node->left, $nombre) 
+            : $this->buscar($node->right, $nombre);
+    }
+
+    public function buscarPorRuta($ruta) {
+        $partes = explode('/', $ruta);
+        $node = $this->root;
+        
+        foreach ($partes as $genero) {
+            $node = $this->buscar($node, trim($genero));
+            if ($node === null) return [];
+        }
+        
+        return $this->obtenerCancionesConSubgeneros($node);
+    }
+
+    private function obtenerCancionesConSubgeneros($node) {
+        $canciones = $node->canciones;
+        
+        if ($node->left !== null) {
+            $canciones = array_merge($canciones, $this->obtenerCancionesConSubgeneros($node->left));
+        }
+        
+        if ($node->right !== null) {
+            $canciones = array_merge($canciones, $this->obtenerCancionesConSubgeneros($node->right));
+        }
+        
+        return $canciones;
+    }
+
+    private function cargarCanciones() {
+        try {
+            $stmt = $this->pdo->query("SELECT id, titulo, artista_id, genero, duracion FROM canciones");
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $generoNode = $this->buscar($this->root, $row['genero']);
+                if ($generoNode !== null) $generoNode->canciones[] = $row;
+            }
+        } catch (PDOException $e) {
+            error_log("Error al cargar canciones: " . $e->getMessage());
+        }
+    }
+}
+
+class SistemaMusical {
+    private $pdo;
+    private $usuarioId;
+    private $arbolGeneros;
+
+    public function __construct($pdo, $usuarioId = 1) {
+        $this->pdo = $pdo;
+        $this->usuarioId = $usuarioId;
+        $this->arbolGeneros = new GenerosTree($pdo);
+    }
+
+    public function recomendarCanciones($limite = 10) {
+        $query = "SELECT c.id, c.titulo, a.nombre as artista, c.genero, c.duracion
+                FROM canciones c
+                JOIN artistas a ON c.artista_id = a.id
+                WHERE c.genero IN (
+                    SELECT c2.genero
+                    FROM historial_reproduccion hr
+                    JOIN canciones c2 ON hr.cancion_id = c2.id
+                    WHERE hr.usuario_id = :usuario_id
+                    GROUP BY c2.genero
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 3
+                )
+                AND c.id NOT IN (
+                    SELECT cancion_id FROM historial_reproduccion 
+                    WHERE usuario_id = :usuario_id2
+                )
+                ORDER BY c.reproducciones DESC
+                LIMIT :limite";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->bindParam(':usuario_id', $this->usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':usuario_id2', $this->usuarioId, PDO::PARAM_INT);
+        $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function obtenerCancionesPorRuta($ruta) {
+        return $this->arbolGeneros->buscarPorRuta($ruta);
+    }
+
+    public function agregarACola($cancionId) {
+        $query = "INSERT INTO cola_reproduccion (usuario_id, cancion_id, orden) 
+                VALUES (:usuario_id, :cancion_id, (SELECT IFNULL(MAX(orden), 0) + 1 FROM cola_reproduccion WHERE usuario_id = :usuario_id2))";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->bindParam(':usuario_id', $this->usuarioId);
+        $stmt->bindParam(':usuario_id2', $this->usuarioId);
+        $stmt->bindParam(':cancion_id', $cancionId);
+        return $stmt->execute();
+    }
+
+    public function obtenerCola() {
+        $query = "SELECT cr.id, c.titulo, a.nombre as artista 
+                FROM cola_reproduccion cr
+                JOIN canciones c ON cr.cancion_id = c.id
+                JOIN artistas a ON c.artista_id = a.id
+                WHERE cr.usuario_id = :usuario_id
+                ORDER BY cr.orden ASC";
+        
+        $stmt = $this->pdo->prepare($query);
+        $stmt->bindParam(':usuario_id', $this->usuarioId);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function reproducirSiguiente() {
+        $this->pdo->beginTransaction();
+        
+        try {
+            // Obtener primera canción en cola
+            $query = "SELECT cr.id, cr.cancion_id, c.titulo 
+                     FROM cola_reproduccion cr
+                     JOIN canciones c ON cr.cancion_id = c.id
+                     WHERE cr.usuario_id = :usuario_id
+                     ORDER BY cr.orden ASC
+                     LIMIT 1";
+            
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bindParam(':usuario_id', $this->usuarioId);
+            $stmt->execute();
+            $cancion = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($cancion) {
+                // Registrar en historial
+                $stmt = $this->pdo->prepare(
+                    "INSERT INTO historial_reproduccion (usuario_id, cancion_id) 
+                    VALUES (:usuario_id, :cancion_id)"
+                );
+                $stmt->execute([
+                    ':usuario_id' => $this->usuarioId,
+                    ':cancion_id' => $cancion['cancion_id']
+                ]);
+                
+                // Eliminar de cola
+                $stmt = $this->pdo->prepare(
+                    "DELETE FROM cola_reproduccion WHERE id = :id"
+                );
+                $stmt->execute([':id' => $cancion['id']]);
+                
+                // Actualizar contador de reproducciones
+                $stmt = $this->pdo->prepare(
+                    "UPDATE canciones SET reproducciones = reproducciones + 1 WHERE id = :id"
+                );
+                $stmt->execute([':id' => $cancion['cancion_id']]);
+                
+                $this->pdo->commit();
+                return $cancion;
+            }
+            
+            $this->pdo->commit();
+            return null;
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Error al reproducir: " . $e->getMessage());
+            return null;
+        }
+    }
+}
+
+// ====================== CONTROLADOR ======================
+$db = (new Database())->getConnection();
+$sistema = new SistemaMusical($db, 1); // Usuario ID 1
+
+// Procesar acciones
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['reproducir'])) {
+        $cancion = $sistema->reproducirSiguiente();
+        if ($cancion) {
+            $_SESSION['mensaje'] = "Reproduciendo: " . htmlspecialchars($cancion['titulo']);
+        } else {
+            $_SESSION['error'] = "No hay canciones en cola";
+        }
+    } elseif (isset($_POST['agregar']) && !empty($_POST['cancion_id'])) {
+        if ($sistema->agregarACola($_POST['cancion_id'])) {
+            $_SESSION['mensaje'] = "Canción agregada a la cola";
+        } else {
+            $_SESSION['error'] = "Error al agregar canción";
+        }
+    } elseif (isset($_POST['buscar']) && !empty($_POST['ruta_genero'])) {
+        $canciones = $sistema->obtenerCancionesPorRuta($_POST['ruta_genero']);
+        $_SESSION['resultado_busqueda'] = $canciones;
+    }
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+// Obtener estado actual
+$cola = $sistema->obtenerCola();
+$recomendaciones = $sistema->recomendarCanciones(5);
+$mensaje = $_SESSION['mensaje'] ?? null;
+$error = $_SESSION['error'] ?? null;
+$resultadoBusqueda = $_SESSION['resultado_busqueda'] ?? null;
+unset($_SESSION['mensaje'], $_SESSION['error'], $_SESSION['resultado_busqueda']);
+?>
+
+<!-- ====================== VISTA ====================== -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundScouts - Sistema Musical</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .mensaje { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #dff0d8; color: #3c763d; }
+        .error { background: #f2dede; color: #a94442; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        button, input[type="submit"] { padding: 8px 15px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .seccion { margin-bottom: 30px; border: 1px solid #eee; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>SoundScouts</h1>
+    
+    <?php if ($mensaje): ?>
+        <div class="mensaje success"><?= $mensaje ?></div>
+    <?php endif; ?>
+    
+    <?php if ($error): ?>
+        <div class="mensaje error"><?= $error ?></div>
+    <?php endif; ?>
+
+    <div class="seccion">
+        <h2>Buscar por Género</h2>
+        <form method="post">
+            <input type="text" name="ruta_genero" placeholder="Ej: Rock/Metal" required>
+            <button type="submit" name="buscar">Buscar</button>
+        </form>
+        
+        <?php if ($resultadoBusqueda): ?>
+            <h3>Resultados:</h3>
+            <table>
+                <tr><th>Título</th><th>Artista</th><th>Género</th><th>Acción</th></tr>
+                <?php foreach ($resultadoBusqueda as $cancion): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($cancion['titulo']) ?></td>
+                        <td><?= htmlspecialchars($cancion['artista']) ?></td>
+                        <td><?= htmlspecialchars($cancion['genero']) ?></td>
+                        <td>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="cancion_id" value="<?= $cancion['id'] ?>">
+                                <button type="submit" name="agregar">+ Cola</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php endif; ?>
+    </div>
+
+    <div class="seccion">
+        <h2>Recomendaciones</h2>
+        <table>
+            <tr><th>Título</th><th>Artista</th><th>Género</th><th>Acción</th></tr>
+            <?php foreach ($recomendaciones as $cancion): ?>
+                <tr>
+                    <td><?= htmlspecialchars($cancion['titulo']) ?></td>
+                    <td><?= htmlspecialchars($cancion['artista']) ?></td>
+                    <td><?= htmlspecialchars($cancion['genero']) ?></td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="cancion_id" value="<?= $cancion['id'] ?>">
+                            <button type="submit" name="agregar">+ Cola</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+
+    <div class="seccion">
+        <h2>Cola de Reproducción</h2>
+        <?php if ($cola): ?>
+            <table>
+                <tr><th>Título</th><th>Artista</th><th>Acción</th></tr>
+                <?php foreach ($cola as $item): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($item['titulo']) ?></td>
+                        <td><?= htmlspecialchars($item['artista']) ?></td>
+                        <td>
+                            <form method="post">
+                                <button type="submit" name="reproducir">Reproducir</button>
+                            <input type="hidden" name="cancion_id" value="<?= $item['id'] ?>">
+                            <button type="submit" name="reproducir">Reproducir</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </table>
+        <?php else: ?>
+            <p>No hay canciones en cola</p>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
